@@ -2,1053 +2,198 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Luci | FINNEX</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-
-  <style>
-    :root {
-      --bg: #f4f7fb;
-      --surface: #ffffff;
-      --primary: #102d46;
-      --accent: #13b99a;
-      --accent-light: #e5f8f3;
-      --text: #172b3a;
-      --muted: #8493a1;
-      --border: #e8edf2;
-      --shadow: 0 8px 30px rgba(20, 45, 65, .06);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    button, input {
-      font: inherit;
-    }
-
-    .app {
-      display: grid;
-      grid-template-columns: 250px 1fr;
-      min-height: 100vh;
-    }
-
-    /* SIDEBAR */
-
-    .sidebar {
-      background: var(--primary);
-      color: white;
-      padding: 28px 18px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      padding: 0 10px;
-      margin-bottom: 45px;
-    }
-
-    .brand-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 13px;
-      background: var(--accent);
-      display: grid;
-      place-items: center;
-      font-size: 19px;
-    }
-
-    .brand h2 {
-      font-size: 21px;
-      letter-spacing: 1px;
-    }
-
-    .brand span {
-      color: #8ea4b5;
-      font-size: 10px;
-      display: block;
-      letter-spacing: 3px;
-      margin-top: 3px;
-    }
-
-    .nav-label {
-      color: #8298aa;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      padding: 0 12px;
-      margin-bottom: 12px;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      padding: 13px 14px;
-      color: #c0ced8;
-      border-radius: 10px;
-      margin-bottom: 5px;
-      font-size: 13px;
-      cursor: pointer;
-      transition: .2s;
-    }
-
-    .nav-item:hover,
-    .nav-item.active {
-      background: rgba(255,255,255,.1);
-      color: white;
-    }
-
-    .nav-item.active {
-      border-left: 3px solid var(--accent);
-    }
-
-    .nav-item i {
-      width: 18px;
-      text-align: center;
-    }
-
-    .sidebar-bottom {
-      margin-top: auto;
-    }
-
-    .support {
-      background: rgba(255,255,255,.07);
-      border-radius: 13px;
-      padding: 16px;
-      margin-bottom: 22px;
-    }
-
-    .support p {
-      font-size: 12px;
-      color: #c0ced8;
-      line-height: 1.6;
-      margin: 8px 0 12px;
-    }
-
-    .support button {
-      border: 0;
-      background: var(--accent);
-      color: white;
-      padding: 9px 12px;
-      border-radius: 8px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    .profile {
-      border-top: 1px solid rgba(255,255,255,.12);
-      padding: 18px 5px 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .avatar {
-      width: 36px;
-      height: 36px;
-      background: #d5e9e6;
-      color: var(--primary);
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-    }
-
-    .profile strong {
-      font-size: 12px;
-    }
-
-    .profile small {
-      display: block;
-      color: #91a5b5;
-      font-size: 10px;
-      margin-top: 4px;
-    }
-
-    /* MAIN */
-
-    .main {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    .topbar {
-      height: 76px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 35px;
-    }
-
-    .breadcrumb {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .breadcrumb strong {
-      color: var(--text);
-    }
-
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .status {
-      color: #159c7e;
-      font-size: 11px;
-      background: var(--accent-light);
-      padding: 8px 12px;
-      border-radius: 20px;
-    }
-
-    .notification {
-      color: #647586;
-      font-size: 17px;
-    }
-
-    .content {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 290px;
-      gap: 25px;
-      padding: 30px 35px;
-      max-width: 1600px;
-      width: 100%;
-      margin: auto;
-    }
-
-    /* CHAT */
-
-    .chat-section {
-      min-width: 0;
-    }
-
-    .welcome {
-      margin-bottom: 25px;
-    }
-
-    .welcome h1 {
-      font-size: 27px;
-      font-weight: 800;
-      color: var(--primary);
-      margin-bottom: 9px;
-    }
-
-    .welcome p {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .luci-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 17px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      min-height: 570px;
-    }
-
-    .chat-header {
-      padding: 18px 22px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .luci-identity {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .luci-avatar {
-      width: 43px;
-      height: 43px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, #13b99a, #087d82);
-      color: white;
-      font-size: 19px;
-    }
-
-    .luci-identity h3 {
-      font-size: 14px;
-      color: var(--primary);
-    }
-
-    .luci-identity p {
-      font-size: 10px;
-      color: #159c7e;
-      margin-top: 5px;
-    }
-
-    .chat-tools {
-      display: flex;
-      gap: 15px;
-      color: var(--muted);
-    }
-
-    .chat-tools i {
-      cursor: pointer;
-    }
-
-    .messages {
-      flex: 1;
-      padding: 25px;
-      overflow-y: auto;
-      max-height: 470px;
-    }
-
-    .date-label {
-      text-align: center;
-      color: #a1acb6;
-      font-size: 10px;
-      margin-bottom: 25px;
-    }
-
-    .message {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 22px;
-      align-items: flex-start;
-    }
-
-    .message.user {
-      justify-content: flex-end;
-    }
-
-    .message-avatar {
-      width: 29px;
-      height: 29px;
-      min-width: 29px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      background: var(--accent-light);
-      color: #11977c;
-      font-size: 12px;
-    }
-
-    .bubble {
-      max-width: 78%;
-      background: #f3f6f9;
-      padding: 13px 16px;
-      border-radius: 4px 13px 13px 13px;
-      font-size: 12px;
-      line-height: 1.7;
-      color: #435462;
-    }
-
-    .user .bubble {
-      background: var(--primary);
-      color: white;
-      border-radius: 13px 4px 13px 13px;
-    }
-
-    .bubble strong {
-      color: var(--primary);
-    }
-
-    .user .bubble strong {
-      color: white;
-    }
-
-    .message-time {
-      color: #a6b0b9;
-      font-size: 9px;
-      margin-top: 6px;
-    }
-
-    .user .message-time {
-      text-align: right;
-    }
-
-    /* SUGGESTIONS */
-
-    .suggestions {
-      padding: 0 23px 18px;
-    }
-
-    .suggestions-label {
-      font-size: 10px;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-
-    .suggestion-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .suggestion {
-      border: 1px solid var(--border);
-      background: white;
-      color: #526574;
-      padding: 9px 12px;
-      border-radius: 20px;
-      font-size: 10px;
-      cursor: pointer;
-      transition: .2s;
-    }
-
-    .suggestion:hover {
-      border-color: var(--accent);
-      color: #11977c;
-      background: var(--accent-light);
-    }
-
-    /* INPUT */
-
-    .chat-input-area {
-      padding: 15px 22px 20px;
-      border-top: 1px solid var(--border);
-    }
-
-    .input-box {
-      display: flex;
-      align-items: center;
-      border: 1px solid #dfe7ec;
-      border-radius: 12px;
-      padding: 7px 9px 7px 15px;
-      transition: .2s;
-    }
-
-    .input-box:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(19,185,154,.08);
-    }
-
-    .input-box input {
-      flex: 1;
-      min-width: 0;
-      border: 0;
-      outline: none;
-      font-size: 12px;
-      padding: 9px 0;
-      color: var(--text);
-    }
-
-    .input-box input::placeholder {
-      color: #a8b3bd;
-    }
-
-    .input-box button {
-      border: 0;
-      cursor: pointer;
-    }
-
-    .voice-btn {
-      background: transparent;
-      color: #8293a1;
-      padding: 9px;
-      font-size: 15px;
-    }
-
-    .send-btn {
-      width: 37px;
-      height: 37px;
-      border-radius: 10px;
-      background: var(--accent);
-      color: white;
-      font-size: 14px;
-    }
-
-    .disclaimer {
-      font-size: 9px;
-      text-align: center;
-      color: #a5b0b9;
-      margin-top: 12px;
-    }
-
-    /* RIGHT PANEL */
-
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .panel-card {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 15px;
-      padding: 19px;
-      box-shadow: var(--shadow);
-    }
-
-    .panel-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 17px;
-    }
-
-    .balance-card {
-      background: linear-gradient(145deg, #102d46, #174c60);
-      color: white;
-      border-radius: 15px;
-      padding: 21px;
-      box-shadow: var(--shadow);
-    }
-
-    .balance-card p {
-      font-size: 10px;
-      color: #b3c9d4;
-    }
-
-    .balance-card h2 {
-      font-size: 25px;
-      margin: 12px 0;
-    }
-
-    .balance-card small {
-      color: #b3c9d4;
-      font-size: 10px;
-    }
-
-    .balance-icon {
-      float: right;
-      color: #4dd9bb;
-      font-size: 19px;
-    }
-
-    .product {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 11px 0;
-      border-bottom: 1px solid #f0f2f5;
-    }
-
-    .product:last-child {
-      border: 0;
-      padding-bottom: 0;
-    }
-
-    .product-icon {
-      width: 35px;
-      height: 35px;
-      background: #edf8f5;
-      color: #13a88c;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      font-size: 13px;
-    }
-
-    .product strong {
-      display: block;
-      font-size: 11px;
-      color: var(--primary);
-    }
-
-    .product small {
-      font-size: 9px;
-      color: var(--muted);
-      display: block;
-      margin-top: 4px;
-    }
-
-    .help-card {
-      background: #eaf8f5;
-      border-radius: 15px;
-      padding: 19px;
-    }
-
-    .help-card i {
-      color: #0e9e83;
-      font-size: 19px;
-      margin-bottom: 12px;
-    }
-
-    .help-card h3 {
-      font-size: 12px;
-      color: var(--primary);
-      margin-bottom: 8px;
-    }
-
-    .help-card p {
-      color: #71868d;
-      font-size: 10px;
-      line-height: 1.6;
-      margin-bottom: 13px;
-    }
-
-    .help-card button {
-      border: 0;
-      background: var(--accent);
-      color: white;
-      padding: 9px 12px;
-      border-radius: 8px;
-      font-size: 10px;
-      cursor: pointer;
-    }
-
-    @media(max-width: 1050px) {
-      .content {
-        grid-template-columns: 1fr;
-      }
-
-      .right-panel {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media(max-width: 700px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
-
-      .sidebar {
-        display: none;
-      }
-
-      .topbar {
-        height: 60px;
-        padding: 0 17px;
-      }
-
-      .content {
-        padding: 20px 12px;
-      }
-
-      .welcome h1 {
-        font-size: 22px;
-      }
-
-      .luci-card {
-        min-height: 600px;
-      }
-
-      .messages {
-        padding: 17px 12px;
-      }
-
-      .bubble {
-        max-width: 90%;
-      }
-
-      .right-panel {
-        grid-template-columns: 1fr;
-      }
-
-      .suggestions {
-        padding: 0 13px 15px;
-      }
-
-      .chat-input-area {
-        padding: 12px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luci - FINNEX</title>
 </head>
-
 <body>
 
-<div class="app">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-
-    <div class="brand">
-      <div class="brand-icon">
-        <i class="fa-solid fa-building-columns"></i>
-      </div>
-      <div>
-        <h2>FINNEX</h2>
-        <span>BANKING ECOSYSTEM</span>
-      </div>
-    </div>
-
-    <p class="nav-label">MENÚ PRINCIPAL</p>
-
-    <div class="nav-item">
-      <i class="fa-solid fa-house"></i> Inicio
-    </div>
-
-    <div class="nav-item">
-      <i class="fa-solid fa-wallet"></i> Mis cuentas
-    </div>
-
-    <div class="nav-item">
-      <i class="fa-solid fa-credit-card"></i> Tarjetas
-    </div>
-
-    <div class="nav-item">
-      <i class="fa-solid fa-piggy-bank"></i> Ahorros
-    </div>
-
-    <div class="nav-item">
-      <i class="fa-solid fa-chart-line"></i> Inversiones
-    </div>
-
-    <div class="nav-item">
-      <i class="fa-solid fa-hand-holding-dollar"></i> Créditos
-    </div>
-
-    <div class="nav-item">
-      <i class="fa-solid fa-shield-halved"></i> Seguros
-    </div>
-
-    <div class="nav-item">
-      <i class="fa-solid fa-file-lines"></i> Solicitudes
-    </div>
-
-    <p class="nav-label" style="margin-top:35px">INTELIGENCIA FINNEX</p>
-
-    <div class="nav-item active">
-      <i class="fa-solid fa-robot"></i> Luci AI
-    </div>
-
-    <div class="sidebar-bottom">
-
-      <div class="support">
-        <i class="fa-solid fa-headset"></i>
-        <p>¿Necesitas ayuda adicional? Nuestro equipo está para ayudarte.</p>
-        <button>Contactar soporte</button>
-      </div>
-
-      <div class="profile">
-        <div class="avatar">C</div>
-        <div>
-          <strong>Cliente FINNEX</strong>
-          <small>Cuenta personal</small>
-        </div>
-      </div>
-
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <header class="topbar">
-      <div class="breadcrumb">
-        FINNEX / <strong>Luci AI</strong>
-      </div>
-
-      <div class="top-actions">
-        <span class="status">
-          <i class="fa-solid fa-circle" style="font-size:7px"></i>
-          Asistente disponible
-        </span>
-        <i class="fa-regular fa-bell notification"></i>
-      </div>
-    </header>
-
-    <div class="content">
-
-      <!-- CHAT -->
-      <section class="chat-section">
-
-        <div class="welcome">
-          <h1>Tu banco, ahora más inteligente.</h1>
-          <p>
-            Habla con Luci, tu asistente inteligente de FINNEX.
-            Consulta tus productos, administra tus servicios y descubre
-            todo lo que puedes hacer con tu banco.
-          </p>
-        </div>
-
-        <div class="luci-card">
-
-          <div class="chat-header">
-
-            <div class="luci-identity">
-              <div class="luci-avatar">
-                <i class="fa-solid fa-sparkles"></i>
-              </div>
-
-              <div>
-                <h3>Luci</h3>
-                <p>
-                  <i class="fa-solid fa-circle" style="font-size:6px"></i>
-                  Inteligencia FINNEX
-                </p>
-              </div>
-            </div>
-
-            <div class="chat-tools">
-              <i class="fa-solid fa-ellipsis"></i>
-              <i class="fa-solid fa-expand"></i>
-            </div>
-
-          </div>
-
-          <div class="messages" id="messages">
-
-            <div class="date-label">CONVERSACIÓN ACTUAL</div>
-
-            <div class="message">
-
-              <div class="message-avatar">
-                <i class="fa-solid fa-sparkles"></i>
-              </div>
-
-              <div>
-                <div class="bubble">
-                  ¡Hola! Soy <strong>Luci</strong>, tu asistente inteligente
-                  de FINNEX. Estoy aquí para ayudarte con tus cuentas,
-                  tarjetas, ahorros, inversiones, créditos y todos nuestros
-                  servicios bancarios.
-
-                  <br><br>
-                  ¿Qué te gustaría consultar hoy?
-                </div>
-                <div class="message-time">Luci · Ahora</div>
-              </div>
-
-            </div>
-
-          </div>
-
-          <!-- QUICK QUESTIONS -->
-          <div class="suggestions">
-
-            <p class="suggestions-label">PREGUNTAS FRECUENTES</p>
-
-            <div class="suggestion-list">
-
-              <button class="suggestion" onclick="quickMessage('¿Cuál es mi saldo disponible?')">
-                <i class="fa-solid fa-wallet"></i> Consultar saldo
-              </button>
-
-              <button class="suggestion" onclick="quickMessage('¿Qué productos de ahorro ofrece FINNEX?')">
-                <i class="fa-solid fa-piggy-bank"></i> Productos de ahorro
-              </button>
-
-              <button class="suggestion" onclick="quickMessage('¿Cómo puedo solicitar un crédito?')">
-                <i class="fa-solid fa-hand-holding-dollar"></i> Solicitar crédito
-              </button>
-
-              <button class="suggestion" onclick="quickMessage('¿Cómo puedo bloquear mi tarjeta?')">
-                <i class="fa-solid fa-credit-card"></i> Bloquear tarjeta
-              </button>
-
-              <button class="suggestion" onclick="quickMessage('¿Qué es un CDT NEXO?')">
-                <i class="fa-solid fa-chart-line"></i> Inversiones
-              </button>
-
-            </div>
-          </div>
-
-          <!-- INPUT -->
-          <div class="chat-input-area">
-
-            <div class="input-box">
-
-              <input
-                type="text"
-                id="userInput"
-                placeholder="Pregúntale algo a Luci sobre FINNEX..."
-                onkeydown="if(event.key === 'Enter') sendMessage()"
-              >
-
-              <button class="voice-btn" title="Función de voz pendiente">
-                <i class="fa-solid fa-microphone"></i>
-              </button>
-
-              <button class="send-btn" onclick="sendMessage()">
-                <i class="fa-solid fa-paper-plane"></i>
-              </button>
-
-            </div>
-
-            <p class="disclaimer">
-              Luci es el asistente virtual de FINNEX. No compartas contraseñas,
-              códigos de seguridad ni información confidencial.
-            </p>
-
-          </div>
-
-        </div>
-      </section>
-
-      <!-- RIGHT PANEL -->
-      <aside class="right-panel">
-
-        <div class="balance-card">
-
-          <i class="fa-solid fa-wallet balance-icon"></i>
-
-          <p>Saldo disponible</p>
-          <h2>••••••••</h2>
-          <small>Información privada del cliente</small>
-
-        </div>
-
-        <div class="panel-card">
-
-          <h3 class="panel-title">Tu ecosistema FINNEX</h3>
-
-          <div class="product">
-            <div class="product-icon">
-              <i class="fa-solid fa-wallet"></i>
-            </div>
-            <div>
-              <strong>NEXA</strong>
-              <small>Cuenta bancaria</small>
-            </div>
-          </div>
-
-          <div class="product">
-            <div class="product-icon">
-              <i class="fa-solid fa-piggy-bank"></i>
-            </div>
-            <div>
-              <strong>VELA / NEXT</strong>
-              <small>Soluciones de ahorro</small>
-            </div>
-          </div>
-
-          <div class="product">
-            <div class="product-icon">
-              <i class="fa-solid fa-box"></i>
-            </div>
-            <div>
-              <strong>NexusBox</strong>
-              <small>Espacios de ahorro</small>
-            </div>
-          </div>
-
-          <div class="product">
-            <div class="product-icon">
-              <i class="fa-solid fa-chart-line"></i>
-            </div>
-            <div>
-              <strong>NEXO</strong>
-              <small>Inversiones y CDT</small>
-            </div>
-          </div>
-
-          <div class="product">
-            <div class="product-icon">
-              <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <div>
-              <strong>NexusShield</strong>
-              <small>Seguros y protección</small>
-            </div>
-          </div>
-
-          <div class="product">
-            <div class="product-icon">
-              <i class="fa-solid fa-building"></i>
-            </div>
-            <div>
-              <strong>NexusBusiness</strong>
-              <small>Soluciones empresariales</small>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="help-card">
-
-          <i class="fa-solid fa-lightbulb"></i>
-
-          <h3>Descubre FINNEX</h3>
-
-          <p>
-            Pregúntale a Luci cómo funcionan nuestros productos,
-            qué beneficios tienen y cómo puedes utilizarlos.
-          </p>
-
-          <button onclick="quickMessage('Explícame los productos y servicios de FINNEX')">
-            Explorar servicios
-          </button>
-
-        </div>
-
-      </aside>
-
-    </div>
-
-  </main>
-
-</div>
-
-<script>
-  const messages = document.getElementById("messages");
-  const input = document.getElementById("userInput");
-
-  function addMessage(text, type) {
-    const message = document.createElement("div");
-    message.className = "message " + type;
-
-    const content = document.createElement("div");
-    const bubble = document.createElement("div");
-    bubble.className = "bubble";
-    bubble.textContent = text;
-
-    const time = document.createElement("div");
-    time.className = "message-time";
-    time.textContent = type === "user" ? "Tú · Ahora" : "Luci · Ahora";
-
-    content.appendChild(bubble);
-    content.appendChild(time);
-
-    if (type === "assistant") {
-      const avatar = document.createElement("div");
-      avatar.className = "message-avatar";
-      avatar.innerHTML = '<i class="fa-solid fa-sparkles"></i>';
-      message.appendChild(avatar);
-    }
-
-    message.appendChild(content);
-    messages.appendChild(message);
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  function sendMessage() {
-    const text = input.value.trim();
-
-    if (!text) return;
-
-    addMessage(text, "user");
-    input.value = "";
-
-    setTimeout(() => {
-      addMessage(
-        "Esta es una demostración visual de Luci. Para responder correctamente necesito conectarme al motor de inteligencia artificial de FINNEX y a los servicios bancarios autorizados.",
-        "assistant"
-      );
-    }, 600);
-  }
-
-  function quickMessage(text) {
-    input.value = text;
-    sendMessage();
-  }
-</script>
+    <main>
+        <button id="voiceButton" type="button">
+            Iniciar conversación
+        </button>
+
+        <p id="status">Luci está esperando.</p>
+    </main>
+
+    <script>
+        const voiceButton = document.getElementById("voiceButton");
+        const statusText = document.getElementById("status");
+
+        let socket = null;
+        let microphone = null;
+        let recorder = null;
+        let active = false;
+        let currentAudio = null;
+
+        function setStatus(message) {
+            statusText.textContent = message;
+        }
+
+        async function startConversation() {
+            try {
+                setStatus("Solicitando acceso al micrófono...");
+
+                microphone = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                const protocol =
+                    window.location.protocol === "https:" ? "wss:" : "ws:";
+
+                socket = new WebSocket(
+                    `${protocol}//${window.location.host}/ws/luci`
+                );
+
+                socket.binaryType = "arraybuffer";
+
+                socket.onopen = () => {
+                    active = true;
+
+                    voiceButton.textContent = "Finalizar conversación";
+                    setStatus("Luci está escuchando.");
+
+                    socket.send(JSON.stringify({
+                        type: "start",
+                        language: "es-CO",
+                        assistant: "luci",
+                        bank: "FINNEX"
+                    }));
+
+                    recorder = new MediaRecorder(microphone, {
+                        mimeType: "audio/webm;codecs=opus"
+                    });
+
+                    recorder.ondataavailable = async (event) => {
+                        if (
+                            event.data.size > 0 &&
+                            socket &&
+                            socket.readyState === WebSocket.OPEN
+                        ) {
+                            const audioData = await event.data.arrayBuffer();
+                            socket.send(audioData);
+                        }
+                    };
+
+                    // Envío continuo de audio al backend.
+                    recorder.start(250);
+                };
+
+                socket.onmessage = async (event) => {
+                    if (typeof event.data !== "string") return;
+
+                    const message = JSON.parse(event.data);
+
+                    if (message.type === "status") {
+                        setStatus(message.message);
+                    }
+
+                    if (message.type === "audio") {
+                        playAudio(message.data, message.mime_type);
+                    }
+
+                    if (message.type === "interrupt") {
+                        stopAudio();
+                    }
+                };
+
+                socket.onerror = () => {
+                    setStatus("No se pudo conectar con Luci.");
+                };
+
+                socket.onclose = () => {
+                    if (active) {
+                        stopConversation();
+                        setStatus("Conexión finalizada.");
+                    }
+                };
+
+            } catch (error) {
+                console.error(error);
+                setStatus("No fue posible acceder al micrófono.");
+                stopConversation();
+            }
+        }
+
+        function playAudio(base64Audio, mimeType = "audio/mpeg") {
+            stopAudio();
+
+            const binary = atob(base64Audio);
+            const bytes = new Uint8Array(binary.length);
+
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+
+            const audioBlob = new Blob([bytes], {
+                type: mimeType
+            });
+
+            const audioURL = URL.createObjectURL(audioBlob);
+
+            currentAudio = new Audio(audioURL);
+
+            currentAudio.onended = () => {
+                URL.revokeObjectURL(audioURL);
+                currentAudio = null;
+            };
+
+            currentAudio.play().catch(error => {
+                console.error("Error reproduciendo audio:", error);
+            });
+        }
+
+        function stopAudio() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+        }
+
+        function stopConversation() {
+            active = false;
+
+            stopAudio();
+
+            if (recorder && recorder.state !== "inactive") {
+                recorder.stop();
+            }
+
+            if (microphone) {
+                microphone.getTracks().forEach(track => track.stop());
+                microphone = null;
+            }
+
+            if (socket) {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: "stop"
+                    }));
+                    socket.close();
+                }
+
+                socket = null;
+            }
+
+            recorder = null;
+            voiceButton.textContent = "Iniciar conversación";
+        }
+
+        voiceButton.addEventListener("click", () => {
+            if (active) {
+                stopConversation();
+                setStatus("Conversación finalizada.");
+            } else {
+                startConversation();
+            }
+        });
+
+    </script>
 
 </body>
 </html>
