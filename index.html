@@ -335,23 +335,23 @@ body {
 // ==========================================
 
 // Pega aquí tu clave de Groq.
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = "PEGA_AQUI_TU_CLAVE_GROQ";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "openai/gpt-oss-120b";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 // ==========================================
 // CONFIGURACIÓN ELEVENLABS + SUPABASE
 // ==========================================
 
-const SUPABASE_URL = "https://qoyfgxqsswlzpiriidwy.supabase.co";
-
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFveWZneHFzc3dsenBpcmlpZHd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzMzUzMTIsImV4cCI6MjEwNjkxMTMxMn0.Ml2Qpfd3ct6du_QdV5CfSFvHCAuIil0xo8r84wEPHiw";
+// Pega aquí tu clave de ElevenLabs.
+const ELEVENLABS_API_KEY = "PEGA_AQUI_TU_CLAVE_ELEVENLABS";
 
 const ELEVENLABS_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
+const ELEVENLABS_MODEL = "eleven_multilingual_v2";
 
-const ELEVENLABS_FUNCTION =
-  `${SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+const ELEVENLABS_URL =
+  `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?output_format=mp3_44100_128`;
 
 // ==========================================
 // ELEMENTOS Y ESTADO
@@ -458,7 +458,7 @@ async function preguntarGroq(pregunta) {
 
   if (
     !GROQ_API_KEY ||
-    GROQ_API_KEY === "PEGA_AQUI_TU_CLAVE_GROQ"
+    GROQ_API_KEY === "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"
   ) {
     throw new Error("Debes colocar tu clave de Groq en el código.");
   }
@@ -530,16 +530,14 @@ async function preguntarGroq(pregunta) {
 let audioActual = null;
 let audioActualURL = null;
 
-// Generar audio utilizando la Edge Function de Supabase
+// Generar audio llamando directamente a ElevenLabs
 async function generarAudio(texto) {
 
   if (
-    !SUPABASE_URL ||
-    !SUPABASE_ANON_KEY ||
-    SUPABASE_URL.includes("TU_PROYECTO") ||
-    SUPABASE_ANON_KEY === "TU_SUPABASE_ANON_KEY"
+    !ELEVENLABS_API_KEY ||
+    ELEVENLABS_API_KEY === "sk_5300dfc1d1b4d05acaa37432532f1e20c53a3b365e245629"
   ) {
-    throw new Error("Falta configurar Supabase.");
+    throw new Error("Falta configurar la clave de ElevenLabs.");
   }
 
   const controller = new AbortController();
@@ -550,19 +548,23 @@ async function generarAudio(texto) {
 
   try {
 
-    const response = await fetch(ELEVENLABS_FUNCTION, {
+    const response = await fetch(ELEVENLABS_URL, {
 
       method: "POST",
 
       headers: {
         "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        "Accept": "audio/mpeg",
+        "xi-api-key": ELEVENLABS_API_KEY
       },
 
       body: JSON.stringify({
         text: texto,
-        voice_id: ELEVENLABS_VOICE_ID
+        model_id: ELEVENLABS_MODEL,
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75
+        }
       }),
 
       signal: controller.signal
