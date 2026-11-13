@@ -3,45 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prueba Asistente de Voz - FINNEX</title>
+  <title>Prueba Voz ElevenLabs - FINNEX</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --wine: #6A0D2E;
-      --wine-dark: #3E0721;
-      --gold: #D4AF37;
-      --bone: #F4F1EE;
-      --white: #FFFFFF;
-      --red: #EF4444;
-    }
+    :root { --wine: #6A0D2E; --wine-dark: #3E0721; --gold: #D4AF37; --bone: #F4F1EE; --white: #FFFFFF; --red: #EF4444; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: var(--wine-dark); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    
-    /* Contenedor tipo Chat */
     .chat-window { width: 380px; height: 550px; background: var(--white); border-radius: 32px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-    
     .chat-header { background: linear-gradient(135deg, var(--wine) 0%, var(--wine-dark) 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--gold); }
     .chat-header-name { font-size: 16px; font-weight: 800; }
     .chat-header-status { font-size: 12px; color: var(--gold); display: flex; align-items: center; gap: 4px; }
     .chat-header-status::before { content: ''; width: 8px; height: 8px; background: #10B981; border-radius: 50%; }
-
     .voice-assistant-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bone); padding: 24px; text-align: center; position: relative; overflow: hidden; }
-    
     .voice-robot-container { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
-    
-    /* Simulamos el robot con un emoji grande para esta prueba */
     .voice-robot { font-size: 100px; z-index: 2; transition: transform 0.3s ease; }
     .voice-robot.listening { animation: pulse-robot 1s infinite alternate; }
     @keyframes pulse-robot { from { transform: scale(1); } to { transform: scale(1.1); } }
-
     .voice-waves { position: absolute; inset: 0; border-radius: 50%; background: var(--wine); opacity: 0; z-index: 1; transition: opacity 0.3s; }
     .voice-waves.active { opacity: 0.15; animation: ripple 1.5s infinite ease-out; }
     @keyframes ripple { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
-
-    .voice-text { font-size: 16px; font-weight: 700; color: var(--wine); line-height: 1.4; max-width: 90%; min-height: 60px; z-index: 3; }
-    
-    .voice-controls { padding: 32px; background: var(--white); display: flex; justify-content: center; border-top: 1px solid #eee; }
-    
+    .voice-text { font-size: 15px; font-weight: 600; color: var(--wine); line-height: 1.5; max-width: 95%; min-height: 80px; z-index: 3; overflow-y: auto; }
+    .voice-controls { padding: 24px; background: var(--white); display: flex; justify-content: center; border-top: 1px solid #eee; }
     .mic-btn { width: 72px; height: 72px; border-radius: 50%; background: var(--wine); color: white; border: none; font-size: 32px; cursor: pointer; box-shadow: 0 10px 25px rgba(106, 13, 46, 0.3); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
     .mic-btn:hover { transform: scale(1.05); background: var(--wine-dark); }
     .mic-btn.listening { background: var(--red); animation: pulse-mic 1s infinite; }
@@ -53,8 +35,8 @@
   <div class="chat-window">
     <div class="chat-header">
       <div>
-        <div class="chat-header-name">Luci (Prueba)</div>
-        <div class="chat-header-status">En línea</div>
+        <div class="chat-header-name">Luci (IA de Voz)</div>
+        <div class="chat-header-status">Conectada</div>
       </div>
     </div>
     
@@ -63,33 +45,43 @@
         <div class="voice-robot" id="voiceRobot">🤖</div>
         <div class="voice-waves" id="voiceWaves"></div>
       </div>
-      <div class="voice-text" id="voiceText">Presiona el micrófono para hablarme</div>
+      <div class="voice-text" id="voiceText">Presiona el micrófono y pregúntame sobre finanzas.</div>
     </div>
     
     <div class="voice-controls">
       <button class="mic-btn" id="micBtn" onclick="iniciarEscucha()">🎤</button>
     </div>
   </div>
-    <script>
-    // Pegamos la configuración directamente para que la prueba no falle
+
+  <!-- CONFIGURACIÓN DIRECTA (Para la prueba) -->
+  <script>
     const CONFIG = {
-      SUPABASE_URL: "https://qoyfgxqsswlzpiriidwy.supabase.co", // <--- Pon tu URL real
-      SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", // <--- Pon tu ANON KEY real
-      GEMINI_API_KEY: "AQ.Ab8RN6JmubjqgApHOaHJfmSz4x13IdgG7keieh7mJ3D4m_MmfA", // <--- Pon tu API KEY real
+      // ⚠️ REEMPLAZA ESTOS VALORES POR LOS TUYOS REALES
+      SUPABASE_URL: "https://qoyfgxqsswlzpiriidwy.supabase.co",
+      SUPABASE_ANON_KEY: "yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFveWZneHFzc3dsenBpcmlpZHd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzMzUzMTIsImV4cCI6MjEwNjkxMTMxMn0.Ml2Qpfd3ct6du_QdV5CfSFvHCAuIil0xo8r84wEPHiw",
+      GEMINI_API_KEY: "AQ.Ab8RN6JmubjqgApHOaHJfmSz4x13IdgG7keieh7mJ3D4m_MmfA",
       URL_GEMINI: "https://generativelanguage.googleapis.com/v1beta/models/",
       MODELO_GEMINI: "gemini-3.5-flash-lite"
     };
+
+    // ⚠️ PON AQUÍ TU ID DE PROYECTO (20 caracteres)
+    const SUPABASE_PROJECT_REF = "TU_REFERENCE_ID"; 
   </script>
+
   <script>
     let recognition = null;
     let isListening = false;
-    
-    // ⚠️ CAMBIA ESTO por el ID de 20 caracteres de tu proyecto
-    const SUPABASE_PROJECT_REF = "qoyfgxqsswlzpiriidwy"; 
 
+    // Función para activar el micrófono
     function iniciarEscucha() {
       if (isListening) return;
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        alert("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.");
+        return;
+      }
+
       recognition = new SpeechRecognition();
       recognition.lang = 'es-CO';
 
@@ -97,6 +89,7 @@
         isListening = true;
         document.getElementById('micBtn').classList.add('listening');
         document.getElementById('voiceRobot').classList.add('listening');
+        document.getElementById('voiceWaves').classList.add('active');
         document.getElementById('voiceText').textContent = "Te estoy escuchando...";
       };
 
@@ -105,6 +98,11 @@
         detenerEscucha();
         document.getElementById('voiceText').textContent = `Tú: "${textoUsuario}"`;
         procesarPreguntaIA(textoUsuario);
+      };
+
+      recognition.onerror = function(event) {
+        detenerEscucha();
+        document.getElementById('voiceText').textContent = "No pude escucharte. Revisa el micrófono.";
       };
 
       recognition.onend = function() { detenerEscucha(); };
@@ -116,61 +114,62 @@
       if (recognition) recognition.stop();
       document.getElementById('micBtn').classList.remove('listening');
       document.getElementById('voiceRobot').classList.remove('listening');
+      document.getElementById('voiceWaves').classList.remove('active');
     }
 
-   async function procesarPreguntaIA(pregunta) {
-  const voiceText = document.getElementById('voiceText');
-  voiceText.textContent = "Luci está pensando...";
-  
-  try {
-    // 1. Preguntar a Gemini
-    const prompt = `Eres Luci, asistente financiera de FINNEX. Responde en máximo 2 oraciones sin emojis. Usuario dice: "${pregunta}"`;
-    const resGemini = await fetch(CONFIG.URL_GEMINI + CONFIG.MODELO_GEMINI + ':generateContent?key=' + CONFIG.GEMINI_API_KEY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-    });
+    // Función principal: Gemini + ElevenLabs
+    async function procesarPreguntaIA(pregunta) {
+      const voiceText = document.getElementById('voiceText');
+      voiceText.textContent = "Luci está pensando...";
+      
+      try {
+        // 1. Obtener respuesta de Gemini
+        const prompt = `Eres Luci, asistente financiera de FINNEX. Responde en máximo 2 oraciones sin emojis. Usuario dice: "${pregunta}"`;
+        
+        const resGemini = await fetch(CONFIG.URL_GEMINI + CONFIG.MODELO_GEMINI + ':generateContent?key=' + CONFIG.GEMINI_API_KEY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        });
 
-    if (!resGemini.ok) {
-      const errText = await resGemini.text();
-      throw new Error(`Gemini HTTP ${resGemini.status}: ${errText}`);
+        if (!resGemini.ok) {
+          const errText = await resGemini.text();
+          throw new Error(`Gemini HTTP ${resGemini.status}: ${errText}`);
+        }
+
+        const dataGemini = await resGemini.json();
+        const respuestaIA = dataGemini.candidates[0].content.parts[0].text;
+        
+        voiceText.textContent = respuestaIA + " (Generando voz...)";
+        
+        // 2. Enviar texto a ElevenLabs vía Supabase
+        const urlEleven = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/elevenlabs-tts`;
+        
+        const resAudio = await fetch(urlEleven, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({ text: respuestaIA, voice_id: "EXAVITQu4vr4xnSDxMaL" })
+        });
+
+        if (!resAudio.ok) {
+          const errorBody = await resAudio.text();
+          throw new Error(`Supabase HTTP ${resAudio.status}: ${errorBody}`);
+        }
+
+        // 3. Reproducir audio
+        const audioBlob = await resAudio.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+
+      } catch (e) {
+        console.error("ERROR DETALLADO:", e);
+        voiceText.innerHTML = `<span style="color:red; font-size:12px; word-break:break-all;">Error: ${e.message}</span>`;
+      }
     }
-
-    const dataGemini = await resGemini.json();
-    const respuestaIA = dataGemini.candidates[0].content.parts[0].text;
-    
-    voiceText.textContent = respuestaIA + " (Generando voz...)";
-    
-    // 2. Pedirle a ElevenLabs que hable (con diagnóstico completo)
-    const urlEleven = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/elevenlabs-tts`;
-    
-    const resAudio = await fetch(urlEleven, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({ text: respuestaIA, voice_id: "EXAVITQu4vr4xnSDxMaL" })
-    });
-
-    // Si Supabase responde con un error HTTP, lo mostramos
-    if (!resAudio.ok) {
-      const errorBody = await resAudio.text();
-      throw new Error(`Supabase HTTP ${resAudio.status}: ${errorBody}`);
-    }
-
-    // 3. Reproducir el audio final
-    const audioBlob = await resAudio.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    audio.play();
-
-  } catch (e) {
-    console.error("ERROR DETALLADO:", e);
-    // Mostramos el error real en la pantalla para poder diagnosticar
-    voiceText.innerHTML = `<span style="color:red; font-size:12px; word-break:break-all;">Error: ${e.message}</span>`;
-  }
-}
   </script>
 </body>
 </html>
