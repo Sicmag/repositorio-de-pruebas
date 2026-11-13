@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba Asistente de Voz - FINNEX</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --wine: #6A0D2E;
+      --wine-dark: #3E0721;
+      --gold: #D4AF37;
+      --bone: #F4F1EE;
+      --white: #FFFFFF;
+      --red: #EF4444;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--wine-dark); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    
+    /* Contenedor tipo Chat */
+    .chat-window { width: 380px; height: 550px; background: var(--white); border-radius: 32px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    
+    .chat-header { background: linear-gradient(135deg, var(--wine) 0%, var(--wine-dark) 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--gold); }
+    .chat-header-name { font-size: 16px; font-weight: 800; }
+    .chat-header-status { font-size: 12px; color: var(--gold); display: flex; align-items: center; gap: 4px; }
+    .chat-header-status::before { content: ''; width: 8px; height: 8px; background: #10B981; border-radius: 50%; }
+
+    .voice-assistant-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bone); padding: 24px; text-align: center; position: relative; overflow: hidden; }
+    
+    .voice-robot-container { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
+    
+    /* Simulamos el robot con un emoji grande para esta prueba */
+    .voice-robot { font-size: 100px; z-index: 2; transition: transform 0.3s ease; }
+    .voice-robot.listening { animation: pulse-robot 1s infinite alternate; }
+    @keyframes pulse-robot { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+    .voice-waves { position: absolute; inset: 0; border-radius: 50%; background: var(--wine); opacity: 0; z-index: 1; transition: opacity 0.3s; }
+    .voice-waves.active { opacity: 0.15; animation: ripple 1.5s infinite ease-out; }
+    @keyframes ripple { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
+
+    .voice-text { font-size: 16px; font-weight: 700; color: var(--wine); line-height: 1.4; max-width: 90%; min-height: 60px; z-index: 3; }
+    
+    .voice-controls { padding: 32px; background: var(--white); display: flex; justify-content: center; border-top: 1px solid #eee; }
+    
+    .mic-btn { width: 72px; height: 72px; border-radius: 50%; background: var(--wine); color: white; border: none; font-size: 32px; cursor: pointer; box-shadow: 0 10px 25px rgba(106, 13, 46, 0.3); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+    .mic-btn:hover { transform: scale(1.05); background: var(--wine-dark); }
+    .mic-btn.listening { background: var(--red); animation: pulse-mic 1s infinite; }
+    @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+  </style>
+</head>
+<body>
+
+  <div class="chat-window">
+    <div class="chat-header">
+      <div>
+        <div class="chat-header-name">Luci (Prueba)</div>
+        <div class="chat-header-status">En línea</div>
+      </div>
+    </div>
+    
+    <div class="voice-assistant-area">
+      <div class="voice-robot-container">
+        <div class="voice-robot" id="voiceRobot">🤖</div>
+        <div class="voice-waves" id="voiceWaves"></div>
+      </div>
+      <div class="voice-text" id="voiceText">Presiona el micrófono para hablarme</div>
+    </div>
+    
+    <div class="voice-controls">
+      <button class="mic-btn" id="micBtn" onclick="iniciarEscucha()">🎤</button>
+    </div>
+  </div>
+
+  <script>
+    let recognition = null;
+    let isListening = false;
+
+    // 1. Función para que el navegador hable
+    function hablar(texto) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Cancelar si estaba hablando
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.lang = 'es-CO'; // Acento colombiano
+        utterance.pitch = 1.1; // Tono un poco más agudo
+        utterance.rate = 1.0;
+        
+        // Buscar voces en español
+        const voces = window.speechSynthesis.getVoices();
+        const vozEspanol = voces.find(v => v.lang.includes('es'));
+        if (vozEspanol) utterance.voice = vozEspanol;
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        alert("Tu navegador no soporta síntesis de voz.");
+      }
+    }
+
+    // 2. Función para activar el micrófono
+    function iniciarEscucha() {
+      if (isListening) {
+        detenerEscucha();
+        return;
+      }
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        alert("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.");
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = 'es-CO';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = function() {
+        isListening = true;
+        document.getElementById('micBtn').classList.add('listening');
+        document.getElementById('voiceRobot').classList.add('listening');
+        document.getElementById('voiceWaves').classList.add('active');
+        document.getElementById('voiceText').textContent = "Te estoy escuchando...";
+      };
+
+      recognition.onresult = function(event) {
+        const textoUsuario = event.results[0][0].transcript;
+        detenerEscucha();
+        
+        document.getElementById('voiceText').textContent = `Tú: "${textoUsuario}"`;
+        
+        // Simulamos que la IA piensa por 1 segundo
+        setTimeout(() => {
+          simularRespuestaIA(textoUsuario);
+        }, 1000);
+      };
+
+      recognition.onerror = function(event) {
+        detenerEscucha();
+        document.getElementById('voiceText').textContent = "No pude escucharte. Revisa el permiso del micrófono.";
+      };
+
+      recognition.onend = function() {
+        detenerEscucha();
+      };
+
+      recognition.start();
+    }
+
+    function detenerEscucha() {
+      isListening = false;
+      if (recognition) recognition.stop();
+      document.getElementById('micBtn').classList.remove('listening');
+      document.getElementById('voiceRobot').classList.remove('listening');
+      document.getElementById('voiceWaves').classList.remove('active');
+    }
+
+    // 3. Simulador de IA (Para esta prueba)
+    function simularRespuestaIA(pregunta) {
+      const textArea = document.getElementById('voiceText');
+      textArea.textContent = "Luci está pensando...";
+      
+      setTimeout(() => {
+        let respuesta = "";
+        const preguntaMin = pregunta.toLowerCase();
+
+        // Lógica de simulación basada en palabras clave
+        if (preguntaMin.includes('saldo') || preguntaMin.includes('cuenta')) {
+          respuesta = "Tu saldo actual en FINNEX es de un millón de pesos. ¿Deseas hacer una transferencia?";
+        } else if (preguntaMin.includes('crédito') || preguntaMin.includes('prestamo')) {
+          respuesta = "Tienes disponible la Familia NEXAR. Microcréditos aprobados en menos de 24 horas con inteligencia artificial.";
+        } else if (preguntaMin.includes('hola') || preguntaMin.includes('buenos')) {
+          respuesta = "Hola, soy Luci. ¿En qué te puedo ayudar hoy con tus finanzas?";
+        } else if (preguntaMin.includes('cdt') || preguntaMin.includes('invertir')) {
+          respuesta = "El producto NEXO te permite invertir desde cien mil pesos con tasas garantizadas.";
+        } else {
+          respuesta = "Entiendo tu pregunta sobre " + pregunta + ". Como soy una prueba, aún no tengo acceso total a la base de datos, pero la implementación real funcionará perfecto.";
+        }
+
+        textArea.textContent = respuesta;
+        hablar(respuesta); // Hace que Luci hable
+        
+      }, 1500);
+    }
+
+    // Cargar voces al inicio (algunos navegadores necesitan esto)
+    window.speechSynthesis.onvoiceschanged = function() {
+      window.speechSynthesis.getVoices();
+    };
+  </script>
+</body>
+</html>
