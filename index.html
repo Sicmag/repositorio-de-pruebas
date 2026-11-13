@@ -347,7 +347,7 @@ const GROQ_MODEL = "openai/gpt-oss-120b";
 // Pega aquí tu clave de ElevenLabs.
 const ELEVENLABS_API_KEY = "sk_5300dfc1d1b4d05acaa37432532f1e20c53a3b365e245629";
 
-const ELEVENLABS_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
+const ELEVENLABS_VOICE_ID = "ZqvIIuD5aI9JFejebHiH";
 const ELEVENLABS_MODEL = "eleven_multilingual_v2";
 
 const ELEVENLABS_URL =
@@ -713,14 +713,18 @@ async function hablar(texto) {
 
     console.error("ERROR ELEVENLABS:", error);
 
+    const motivo = error.message;
+
     voiceText.textContent =
       "Usando voz alternativa...";
 
     // Si ElevenLabs falla, utilizar la voz del navegador
     await hablarConNavegador(texto);
 
+    // Mostrar el motivo real para poder corregirlo
     voiceText.textContent =
-      "Puedes volver a hablar conmigo.";
+      "Voz alternativa usada. Motivo: " + motivo;
+    voiceText.classList.add("error");
 
   } finally {
 
