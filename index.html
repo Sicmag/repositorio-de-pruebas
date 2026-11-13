@@ -29,6 +29,8 @@
     .mic-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .mic-btn.listening { background: var(--red); animation: pulse-mic 1s infinite; }
     @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    .err { color: #dc2626; font-size: 12px; word-break: break-all; font-weight: 600; }
+    .warn { color: #b45309; font-size: 11px; word-break: break-all; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -54,31 +56,90 @@
     </div>
   </div>
 
+  <!-- config.js debe estar en la MISMA carpeta que este archivo -->
   <script src="config.js"></script>
 
   <script>
-    // ⚠️ PON AQUÍ TU ID DE PROYECTO DE SUPABASE (20 caracteres)
-    const SUPABASE_PROJECT_REF = "qoyfgxqsswlzpiriidwy"; 
+    const $ = (id) => document.getElementById(id);
 
     let recognition = null;
     let isListening = false;
     let isBusy = false;
     let audioActual = null;
 
-    const $ = (id) => document.getElementById(id);
+    const TIMEOUT_IA_MS = 25000;
+    const TIMEOUT_VOZ_MS = 25000;
 
-    // Textos iniciales desde config.js
-    $('asistenteNombre').textContent = `${CONFIG.ASISTENTE_NOMBRE} (IA de Voz)`;
-    $('voiceText').textContent = CONFIG.ASISTENTE_SALUDO;
+    // ---------- Mostrar errores SIEMPRE en pantalla ----------
+    function mostrarError(msg) {
+      const el = $('voiceText');
+      el.textContent = '';
+      const s = document.createElement('span');
+      s.className = 'err';
+      s.textContent = msg;
+      el.appendChild(s);
+    }
+
+    window.addEventListener('error', (e) => {
+      console.error(e.error || e.message);
+      mostrarError('Error: ' + (e.message || 'desconocido'));
+      setBusy(false);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error(e.reason);
+      mostrarError('Error: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+      setBusy(false);
+    });
+
+    // ---------- Validar config.js ----------
+    function configOK() {
+      if (typeof CONFIG === 'undefined') {
+        mostrarError('No se cargó config.js. Ponlo en la misma carpeta que este HTML y revisa que se llame exactamente config.js.');
+        return false;
+      }
+      const faltan = ['GROQ_API_KEY', 'URL_GROQ', 'MODELO_GROQ', 'SUPABASE_URL', 'SUPABASE_ANON_KEY']
+        .filter(k => !CONFIG[k]);
+      if (faltan.length) {
+        mostrarError('Faltan valores en config.js: ' + faltan.join(', '));
+        return false;
+      }
+      return true;
+    }
+
+    // Valores seguros aunque config.js falle
+    const NOMBRE = () => (typeof CONFIG !== 'undefined' && CONFIG.ASISTENTE_NOMBRE) || 'Luci';
+    const ROL = () => (typeof CONFIG !== 'undefined' && CONFIG.ASISTENTE_ROL) || 'asistente virtual de FinNex';
+
+    if (typeof CONFIG !== 'undefined') {
+      $('asistenteNombre').textContent = `${NOMBRE()} (IA de Voz)`;
+      if (CONFIG.ASISTENTE_SALUDO) $('voiceText').textContent = CONFIG.ASISTENTE_SALUDO;
+    } else {
+      configOK(); // muestra el aviso
+    }
 
     function setBusy(v) {
       isBusy = v;
       $('micBtn').disabled = v;
     }
 
+    // fetch con límite de tiempo (evita que se quede colgado para siempre)
+    async function fetchConTimeout(url, opciones, ms, etiqueta) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        return await fetch(url, { ...opciones, signal: ctrl.signal });
+      } catch (e) {
+        if (e.name === 'AbortError') throw new Error(`${etiqueta} tardó más de ${ms / 1000}s sin responder.`);
+        throw new Error(`${etiqueta}: no se pudo conectar (${e.message}). Revisa internet, la URL o CORS.`);
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
     // ---------- Micrófono ----------
     function iniciarEscucha() {
       if (isListening || isBusy) return;
+      if (!configOK()) return;
 
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -87,7 +148,7 @@
       }
 
       if (audioActual) { audioActual.pause(); audioActual = null; }
-      window.speechSynthesis && window.speechSynthesis.cancel();
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
 
       recognition = new SpeechRecognition();
       recognition.lang = 'es-CO';
@@ -108,16 +169,23 @@
         huboResultado = true;
         const textoUsuario = event.results[0][0].transcript;
         $('voiceText').textContent = `Tú: "${textoUsuario}"`;
-        procesarPreguntaIA(textoUsuario);
+        // setTimeout evita que un error dentro del evento de voz lo deje mudo
+        setTimeout(() => {
+          procesarPreguntaIA(textoUsuario).catch((e) => {
+            console.error(e);
+            mostrarError('Error: ' + e.message);
+            setBusy(false);
+          });
+        }, 0);
       };
 
       recognition.onerror = (event) => {
         const msg = event.error === 'not-allowed'
-          ? "Permiso de micrófono denegado. Actívalo en el navegador."
+          ? "Permiso de micrófono denegado. Actívalo en el navegador (y usa localhost o https)."
           : event.error === 'no-speech'
             ? "No te escuché. Intenta de nuevo."
-            : "No pude escucharte. Revisa el micrófono.";
-        $('voiceText').textContent = msg;
+            : `No pude escucharte (${event.error}). Revisa el micrófono.`;
+        mostrarError(msg);
       };
 
       recognition.onend = () => {
@@ -139,7 +207,7 @@
 
     // ---------- Groq (texto) ----------
     async function preguntarGroq(pregunta) {
-      const res = await fetch(CONFIG.URL_GROQ, {
+      const res = await fetchConTimeout(CONFIG.URL_GROQ, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,32 +218,34 @@
           messages: [
             {
               role: 'system',
-              content: `Eres ${CONFIG.ASISTENTE_NOMBRE}, ${CONFIG.ASISTENTE_ROL}. Responde siempre en español, en máximo 2 oraciones, sin emojis, sin listas ni formato markdown, porque tu respuesta se leerá en voz alta.`
+              content: `Eres ${NOMBRE()}, ${ROL()}. Responde siempre en español, en máximo 2 oraciones, sin emojis, sin listas ni formato markdown, porque tu respuesta se leerá en voz alta.`
             },
             { role: 'user', content: pregunta }
           ],
           temperature: 0.6,
-          max_completion_tokens: 600,
+          max_completion_tokens: 800,
           reasoning_effort: 'low'
         })
-      });
+      }, TIMEOUT_IA_MS, 'Groq');
 
       if (!res.ok) {
-        throw new Error(`Groq HTTP ${res.status}: ${await res.text()}`);
+        let detalle = await res.text();
+        if (res.status === 401) detalle = 'API key de Groq inválida o revocada. Actualiza GROQ_API_KEY en config.js. ' + detalle;
+        if (res.status === 429) detalle = 'Límite de uso de Groq alcanzado. Espera un momento. ' + detalle;
+        throw new Error(`Groq HTTP ${res.status}: ${detalle}`);
       }
 
       const data = await res.json();
-      const texto = data?.choices?.[0]?.message?.content?.trim();
+      const texto = (data?.choices?.[0]?.message?.content || '').trim();
       if (!texto) throw new Error("Groq devolvió una respuesta vacía.");
       return texto;
     }
 
     // ---------- ElevenLabs vía Supabase Edge Function ----------
     async function generarAudio(texto) {
-      // Usamos la URL construida con el PROJECT_REF
-      const urlFuncion = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/elevenlabs-tts`;
+      const url = `${CONFIG.SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
-      const res = await fetch(urlFuncion, {
+      const res = await fetchConTimeout(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,12 +253,16 @@
           'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({ text: texto, voice_id: "EXAVITQu4vr4xnSDxMaL" })
-      });
+      }, TIMEOUT_VOZ_MS, 'Supabase/ElevenLabs');
 
       if (!res.ok) {
         throw new Error(`Supabase HTTP ${res.status}: ${await res.text()}`);
       }
-      return await res.blob();
+      const blob = await res.blob();
+      if (!blob.type.startsWith('audio') && blob.size < 1000) {
+        throw new Error('La función no devolvió audio: ' + (await blob.text()));
+      }
+      return blob;
     }
 
     // Plan B: voz del navegador si ElevenLabs falla
@@ -201,37 +275,44 @@
 
     // ---------- Flujo principal ----------
     async function procesarPreguntaIA(pregunta) {
-      const voiceText = $('voiceText');
       setBusy(true);
-      voiceText.textContent = `${CONFIG.ASISTENTE_NOMBRE} está pensando...`;
-
-      let respuestaIA;
       try {
-        respuestaIA = await preguntarGroq(pregunta);
-        voiceText.textContent = respuestaIA;
-      } catch (e) {
-        console.error("ERROR GROQ:", e);
-        voiceText.innerHTML = `<span style="color:red; font-size:12px; word-break:break-all;">Error IA: ${e.message}</span>`;
-        setBusy(false);
-        return;
-      }
+        $('voiceText').textContent = `${NOMBRE()} está pensando...`;
 
-      try {
-        const blob = await generarAudio(respuestaIA);
-        const url = URL.createObjectURL(blob);
-        audioActual = new Audio(url);
-        $('voiceRobot').classList.add('speaking');
-        audioActual.onended = () => {
+        // 1) Texto con Groq
+        let respuestaIA;
+        try {
+          respuestaIA = await preguntarGroq(pregunta);
+        } catch (e) {
+          console.error("ERROR GROQ:", e);
+          mostrarError('Error IA: ' + e.message);
+          return;
+        }
+        $('voiceText').textContent = respuestaIA;
+
+        // 2) Voz con ElevenLabs (si falla, usa la del navegador)
+        try {
+          const blob = await generarAudio(respuestaIA);
+          const url = URL.createObjectURL(blob);
+          audioActual = new Audio(url);
+          $('voiceRobot').classList.add('speaking');
+          audioActual.onended = () => {
+            $('voiceRobot').classList.remove('speaking');
+            URL.revokeObjectURL(url);
+          };
+          audioActual.onerror = () => $('voiceRobot').classList.remove('speaking');
+          await audioActual.play();
+        } catch (e) {
+          console.error("ERROR VOZ:", e);
           $('voiceRobot').classList.remove('speaking');
-          URL.revokeObjectURL(url);
-        };
-        await audioActual.play();
-      } catch (e) {
-        console.error("ERROR VOZ:", e);
-        $('voiceRobot').classList.remove('speaking');
-        
-        voiceText.innerHTML = `${respuestaIA}<br><span style="color:#b45309; font-size:11px; word-break:break-all;">(ElevenLabs falló: ${e.message})</span>`;
-        hablarConNavegador(respuestaIA);
+          const el = $('voiceText');
+          el.textContent = respuestaIA;
+          const aviso = document.createElement('div');
+          aviso.className = 'warn';
+          aviso.textContent = `(ElevenLabs falló: ${e.message})`;
+          el.appendChild(aviso);
+          hablarConNavegador(respuestaIA);
+        }
       } finally {
         setBusy(false);
       }
