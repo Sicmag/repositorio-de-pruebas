@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -336,10 +335,23 @@ body {
 // ==========================================
 
 // Pega aquí tu clave de Groq.
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = "PEGA_AQUI_TU_CLAVE_GROQ";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "openai/gpt-oss-120b";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+
+// ==========================================
+// CONFIGURACIÓN ELEVENLABS + SUPABASE
+// ==========================================
+
+const SUPABASE_URL = "https://TU_PROYECTO.supabase.co";
+
+const SUPABASE_ANON_KEY = "TU_SUPABASE_ANON_KEY";
+
+const ELEVENLABS_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
+
+const ELEVENLABS_FUNCTION =
+  `${SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
 // ==========================================
 // ELEMENTOS Y ESTADO
@@ -512,15 +524,92 @@ async function preguntarGroq(pregunta) {
 }
 
 // ==========================================
-// RESPUESTA DE VOZ
+// ELEVENLABS - GENERACIÓN DE VOZ NATURAL
 // ==========================================
 
-function hablar(texto) {
+let audioActual = null;
+let audioActualURL = null;
+
+// Generar audio utilizando la Edge Function de Supabase
+async function generarAudio(texto) {
+
+  if (
+    !SUPABASE_URL ||
+    !SUPABASE_ANON_KEY ||
+    SUPABASE_URL.includes("TU_PROYECTO") ||
+    SUPABASE_ANON_KEY === "TU_SUPABASE_ANON_KEY"
+  ) {
+    throw new Error("Falta configurar Supabase.");
+  }
+
+  const controller = new AbortController();
+
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 45000);
+
+  try {
+
+    const response = await fetch(ELEVENLABS_FUNCTION, {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+      },
+
+      body: JSON.stringify({
+        text: texto,
+        voice_id: ELEVENLABS_VOICE_ID
+      }),
+
+      signal: controller.signal
+
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      throw new Error(
+        `ElevenLabs HTTP ${response.status}: ${errorText}`
+      );
+    }
+
+    const blob = await response.blob();
+
+    if (!blob.type.startsWith("audio/") || blob.size < 1000) {
+      throw new Error("ElevenLabs no devolvió un audio válido.");
+    }
+
+    return blob;
+
+  } catch (error) {
+
+    if (error.name === "AbortError") {
+      throw new Error("ElevenLabs tardó demasiado en responder.");
+    }
+
+    throw error;
+
+  } finally {
+
+    clearTimeout(timeout);
+
+  }
+}
+
+// ==========================================
+// VOZ DE RESPALDO DEL NAVEGADOR
+// ==========================================
+
+function hablarConNavegador(texto) {
 
   return new Promise((resolve, reject) => {
 
     if (!window.speechSynthesis) {
-      reject(new Error("Tu navegador no permite reproducir voz."));
+      reject(new Error("El navegador no admite reproducción de voz."));
       return;
     }
 
@@ -547,17 +636,102 @@ function hablar(texto) {
     };
 
     utterance.onerror = event => {
+
       robot.classList.remove("speaking");
 
       if (event.error === "canceled") {
         resolve();
       } else {
-        reject(new Error("No se pudo reproducir la respuesta."));
+        reject(new Error("No se pudo reproducir la voz de respaldo."));
       }
+
     };
 
     window.speechSynthesis.speak(utterance);
+
   });
+
+}
+
+// ==========================================
+// RESPUESTA DE VOZ (ElevenLabs + respaldo)
+// ==========================================
+
+async function hablar(texto) {
+
+  robot.classList.remove("listening");
+  robot.classList.add("speaking");
+
+  voiceText.textContent = "Luci está preparando su respuesta...";
+
+  try {
+
+    // Detener cualquier audio anterior
+    if (audioActual) {
+      audioActual.pause();
+      audioActual = null;
+    }
+
+    if (audioActualURL) {
+      URL.revokeObjectURL(audioActualURL);
+      audioActualURL = null;
+    }
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+
+    // Solicitar voz natural a ElevenLabs
+    const blob = await generarAudio(texto);
+
+    audioActualURL = URL.createObjectURL(blob);
+
+    audioActual = new Audio(audioActualURL);
+
+    audioActual.volume = 1;
+
+    voiceText.textContent = "Luci está hablando...";
+
+    await new Promise((resolve, reject) => {
+
+      audioActual.onended = resolve;
+
+      audioActual.onerror = () => {
+        reject(new Error("No se pudo reproducir el audio."));
+      };
+
+      audioActual.play().catch(reject);
+
+    });
+
+    voiceText.textContent = "Puedes volver a hablar conmigo.";
+
+  } catch (error) {
+
+    console.error("ERROR ELEVENLABS:", error);
+
+    voiceText.textContent =
+      "Usando voz alternativa...";
+
+    // Si ElevenLabs falla, utilizar la voz del navegador
+    await hablarConNavegador(texto);
+
+    voiceText.textContent =
+      "Puedes volver a hablar conmigo.";
+
+  } finally {
+
+    robot.classList.remove("speaking");
+
+    if (audioActualURL) {
+      URL.revokeObjectURL(audioActualURL);
+      audioActualURL = null;
+    }
+
+    audioActual = null;
+
+  }
+
 }
 
 // ==========================================
@@ -581,8 +755,6 @@ async function procesarPregunta(pregunta) {
     voiceText.textContent = respuesta;
 
     await hablar(respuesta);
-
-    voiceText.textContent = "Puedes volver a hablar conmigo.";
 
   } catch (error) {
 
