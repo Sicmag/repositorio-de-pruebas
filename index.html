@@ -70,7 +70,16 @@
       <button class="mic-btn" id="micBtn" onclick="iniciarEscucha()">🎤</button>
     </div>
   </div>
-  <script src="js/config.js"></script>
+    <script>
+    // Pegamos la configuración directamente para que la prueba no falle
+    const CONFIG = {
+      SUPABASE_URL: "https://qoyfgxqsswlzpiriidwy.supabase.co", // <--- Pon tu URL real
+      SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", // <--- Pon tu ANON KEY real
+      GEMINI_API_KEY: "AQ.Ab8RN6JmubjqgApHOaHJfmSz4x13IdgG7keieh7mJ3D4m_MmfA", // <--- Pon tu API KEY real
+      URL_GEMINI: "https://generativelanguage.googleapis.com/v1beta/models/",
+      MODELO_GEMINI: "gemini-3.5-flash-lite"
+    };
+  </script>
   <script>
     let recognition = null;
     let isListening = false;
