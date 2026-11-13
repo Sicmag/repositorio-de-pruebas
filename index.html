@@ -17,15 +17,16 @@
     .voice-assistant-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bone); padding: 24px; text-align: center; position: relative; overflow: hidden; }
     .voice-robot-container { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
     .voice-robot { font-size: 100px; z-index: 2; transition: transform 0.3s ease; }
-    .voice-robot.listening { animation: pulse-robot 1s infinite alternate; }
+    .voice-robot.listening, .voice-robot.speaking { animation: pulse-robot 1s infinite alternate; }
     @keyframes pulse-robot { from { transform: scale(1); } to { transform: scale(1.1); } }
     .voice-waves { position: absolute; inset: 0; border-radius: 50%; background: var(--wine); opacity: 0; z-index: 1; transition: opacity 0.3s; }
     .voice-waves.active { opacity: 0.15; animation: ripple 1.5s infinite ease-out; }
     @keyframes ripple { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
-    .voice-text { font-size: 15px; font-weight: 600; color: var(--wine); line-height: 1.5; max-width: 95%; min-height: 80px; z-index: 3; overflow-y: auto; }
+    .voice-text { font-size: 15px; font-weight: 600; color: var(--wine); line-height: 1.5; max-width: 95%; min-height: 80px; max-height: 140px; z-index: 3; overflow-y: auto; }
     .voice-controls { padding: 24px; background: var(--white); display: flex; justify-content: center; border-top: 1px solid #eee; }
     .mic-btn { width: 72px; height: 72px; border-radius: 50%; background: var(--wine); color: white; border: none; font-size: 32px; cursor: pointer; box-shadow: 0 10px 25px rgba(106, 13, 46, 0.3); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
     .mic-btn:hover { transform: scale(1.05); background: var(--wine-dark); }
+    .mic-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .mic-btn.listening { background: var(--red); animation: pulse-mic 1s infinite; }
     @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
   </style>
@@ -35,11 +36,11 @@
   <div class="chat-window">
     <div class="chat-header">
       <div>
-        <div class="chat-header-name">Luci (IA de Voz)</div>
+        <div class="chat-header-name" id="asistenteNombre">Luci (IA de Voz)</div>
         <div class="chat-header-status">Conectada</div>
       </div>
     </div>
-    
+
     <div class="voice-assistant-area">
       <div class="voice-robot-container">
         <div class="voice-robot" id="voiceRobot">🤖</div>
@@ -47,127 +48,188 @@
       </div>
       <div class="voice-text" id="voiceText">Presiona el micrófono y pregúntame sobre finanzas.</div>
     </div>
-    
+
     <div class="voice-controls">
       <button class="mic-btn" id="micBtn" onclick="iniciarEscucha()">🎤</button>
     </div>
   </div>
 
-  <!-- CONFIGURACIÓN DIRECTA (Para la prueba) -->
-  <script>
-    const CONFIG = {
-      // ⚠️ REEMPLAZA ESTOS VALORES POR LOS TUYOS REALES
-      SUPABASE_URL: "https://qoyfgxqsswlzpiriidwy.supabase.co",
-      SUPABASE_ANON_KEY: "yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFveWZneHFzc3dsenBpcmlpZHd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzMzUzMTIsImV4cCI6MjEwNjkxMTMxMn0.Ml2Qpfd3ct6du_QdV5CfSFvHCAuIil0xo8r84wEPHiw",
-      GEMINI_API_KEY: "AQ.Ab8RN6JmubjqgApHOaHJfmSz4x13IdgG7keieh7mJ3D4m_MmfA",
-      URL_GEMINI: "https://generativelanguage.googleapis.com/v1beta/models/",
-      MODELO_GEMINI: "gemini-3.5-flash-lite"
-    };
-
-    // ⚠️ PON AQUÍ TU ID DE PROYECTO (20 caracteres)
-    const SUPABASE_PROJECT_REF = "TU_REFERENCE_ID"; 
-  </script>
+  <!-- Configuración central (debe estar en la misma carpeta que este HTML) -->
+  <script src="config.js"></script>
 
   <script>
     let recognition = null;
     let isListening = false;
+    let isBusy = false;
+    let audioActual = null;
 
-    // Función para activar el micrófono
+    const $ = (id) => document.getElementById(id);
+
+    // Textos iniciales desde config.js
+    $('asistenteNombre').textContent = `${CONFIG.ASISTENTE_NOMBRE} (IA de Voz)`;
+    $('voiceText').textContent = CONFIG.ASISTENTE_SALUDO;
+
+    function setBusy(v) {
+      isBusy = v;
+      $('micBtn').disabled = v;
+    }
+
+    // ---------- Micrófono ----------
     function iniciarEscucha() {
-      if (isListening) return;
+      if (isListening || isBusy) return;
+
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      
       if (!SpeechRecognition) {
         alert("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.");
         return;
       }
 
+      // Si Luci está hablando, la callamos
+      if (audioActual) { audioActual.pause(); audioActual = null; }
+      window.speechSynthesis && window.speechSynthesis.cancel();
+
       recognition = new SpeechRecognition();
       recognition.lang = 'es-CO';
+      recognition.continuous = false;
+      recognition.interimResults = false;
 
-      recognition.onstart = function() {
+      let huboResultado = false;
+
+      recognition.onstart = () => {
         isListening = true;
-        document.getElementById('micBtn').classList.add('listening');
-        document.getElementById('voiceRobot').classList.add('listening');
-        document.getElementById('voiceWaves').classList.add('active');
-        document.getElementById('voiceText').textContent = "Te estoy escuchando...";
+        $('micBtn').classList.add('listening');
+        $('voiceRobot').classList.add('listening');
+        $('voiceWaves').classList.add('active');
+        $('voiceText').textContent = "Te estoy escuchando...";
       };
 
-      recognition.onresult = function(event) {
+      recognition.onresult = (event) => {
+        huboResultado = true;
         const textoUsuario = event.results[0][0].transcript;
-        detenerEscucha();
-        document.getElementById('voiceText').textContent = `Tú: "${textoUsuario}"`;
+        $('voiceText').textContent = `Tú: "${textoUsuario}"`;
         procesarPreguntaIA(textoUsuario);
       };
 
-      recognition.onerror = function(event) {
-        detenerEscucha();
-        document.getElementById('voiceText').textContent = "No pude escucharte. Revisa el micrófono.";
+      recognition.onerror = (event) => {
+        const msg = event.error === 'not-allowed'
+          ? "Permiso de micrófono denegado. Actívalo en el navegador (y abre la página con https o localhost)."
+          : event.error === 'no-speech'
+            ? "No te escuché. Intenta de nuevo."
+            : "No pude escucharte. Revisa el micrófono.";
+        $('voiceText').textContent = msg;
       };
 
-      recognition.onend = function() { detenerEscucha(); };
+      recognition.onend = () => {
+        resetUIEscucha();
+        if (!huboResultado && $('voiceText').textContent === "Te estoy escuchando...") {
+          $('voiceText').textContent = "No te escuché. Intenta de nuevo.";
+        }
+      };
+
       recognition.start();
     }
 
-    function detenerEscucha() {
+    function resetUIEscucha() {
       isListening = false;
-      if (recognition) recognition.stop();
-      document.getElementById('micBtn').classList.remove('listening');
-      document.getElementById('voiceRobot').classList.remove('listening');
-      document.getElementById('voiceWaves').classList.remove('active');
+      $('micBtn').classList.remove('listening');
+      $('voiceRobot').classList.remove('listening');
+      $('voiceWaves').classList.remove('active');
     }
 
-    // Función principal: Gemini + ElevenLabs
+    // ---------- Groq (texto) ----------
+    async function preguntarGroq(pregunta) {
+      const res = await fetch(CONFIG.URL_GROQ, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${CONFIG.GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: CONFIG.MODELO_GROQ,
+          messages: [
+            {
+              role: 'system',
+              content: `Eres ${CONFIG.ASISTENTE_NOMBRE}, ${CONFIG.ASISTENTE_ROL}. Responde siempre en español, en máximo 2 oraciones, sin emojis, sin listas ni formato markdown, porque tu respuesta se leerá en voz alta.`
+            },
+            { role: 'user', content: pregunta }
+          ],
+          temperature: 0.6,
+          max_completion_tokens: 600,   // gpt-oss razona primero; con pocos tokens puede devolver vacío
+          reasoning_effort: 'low'       // respuestas más rápidas para voz
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Groq HTTP ${res.status}: ${await res.text()}`);
+      }
+
+      const data = await res.json();
+      const texto = data?.choices?.[0]?.message?.content?.trim();
+      if (!texto) throw new Error("Groq devolvió una respuesta vacía.");
+      return texto;
+    }
+
+    // ---------- ElevenLabs vía Supabase Edge Function ----------
+    async function generarAudio(texto) {
+      const res = await fetch(`${CONFIG.SUPABASE_URL}/functions/v1/elevenlabs-tts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': CONFIG.SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ text: texto, voice_id: "EXAVITQu4vr4xnSDxMaL" })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Supabase HTTP ${res.status}: ${await res.text()}`);
+      }
+      return await res.blob();
+    }
+
+    // Plan B: voz del navegador si ElevenLabs falla
+    function hablarConNavegador(texto) {
+      if (!window.speechSynthesis) return;
+      const u = new SpeechSynthesisUtterance(texto);
+      u.lang = 'es-CO';
+      window.speechSynthesis.speak(u);
+    }
+
+    // ---------- Flujo principal ----------
     async function procesarPreguntaIA(pregunta) {
-      const voiceText = document.getElementById('voiceText');
-      voiceText.textContent = "Luci está pensando...";
-      
+      const voiceText = $('voiceText');
+      setBusy(true);
+      voiceText.textContent = `${CONFIG.ASISTENTE_NOMBRE} está pensando...`;
+
+      let respuestaIA;
       try {
-        // 1. Obtener respuesta de Gemini
-        const prompt = `Eres Luci, asistente financiera de FINNEX. Responde en máximo 2 oraciones sin emojis. Usuario dice: "${pregunta}"`;
-        
-        const resGemini = await fetch(CONFIG.URL_GEMINI + CONFIG.MODELO_GEMINI + ':generateContent?key=' + CONFIG.GEMINI_API_KEY, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-        });
-
-        if (!resGemini.ok) {
-          const errText = await resGemini.text();
-          throw new Error(`Gemini HTTP ${resGemini.status}: ${errText}`);
-        }
-
-        const dataGemini = await resGemini.json();
-        const respuestaIA = dataGemini.candidates[0].content.parts[0].text;
-        
-        voiceText.textContent = respuestaIA + " (Generando voz...)";
-        
-        // 2. Enviar texto a ElevenLabs vía Supabase
-        const urlEleven = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/elevenlabs-tts`;
-        
-        const resAudio = await fetch(urlEleven, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({ text: respuestaIA, voice_id: "EXAVITQu4vr4xnSDxMaL" })
-        });
-
-        if (!resAudio.ok) {
-          const errorBody = await resAudio.text();
-          throw new Error(`Supabase HTTP ${resAudio.status}: ${errorBody}`);
-        }
-
-        // 3. Reproducir audio
-        const audioBlob = await resAudio.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-
+        respuestaIA = await preguntarGroq(pregunta);
+        voiceText.textContent = respuestaIA;
       } catch (e) {
-        console.error("ERROR DETALLADO:", e);
-        voiceText.innerHTML = `<span style="color:red; font-size:12px; word-break:break-all;">Error: ${e.message}</span>`;
+        console.error("ERROR GROQ:", e);
+        voiceText.innerHTML = `<span style="color:red; font-size:12px; word-break:break-all;">Error IA: ${e.message}</span>`;
+        setBusy(false);
+        return;
+      }
+
+      try {
+        const blob = await generarAudio(respuestaIA);
+        const url = URL.createObjectURL(blob);
+        audioActual = new Audio(url);
+        $('voiceRobot').classList.add('speaking');
+        audioActual.onended = () => {
+          $('voiceRobot').classList.remove('speaking');
+          URL.revokeObjectURL(url);
+        };
+        await audioActual.play();
+      } catch (e) {
+        console.error("ERROR VOZ:", e);
+        $('voiceRobot').classList.remove('speaking');
+        // Mostramos la respuesta igual y usamos la voz del navegador
+        voiceText.innerHTML = `${respuestaIA}<br><span style="color:#b45309; font-size:11px; word-break:break-all;">(ElevenLabs falló: ${e.message})</span>`;
+        hablarConNavegador(respuestaIA);
+      } finally {
+        setBusy(false);
       }
     }
   </script>
