@@ -109,50 +109,59 @@
       document.getElementById('voiceRobot').classList.remove('listening');
     }
 
-    async function procesarPreguntaIA(pregunta) {
-      const voiceText = document.getElementById('voiceText');
-      voiceText.textContent = "Luci está pensando...";
-      
-      try {
-        // 1. Preguntar a Gemini
-        const prompt = `Eres Luci, asistente financiera de FINNEX. Responde en máximo 2 oraciones sin emojis. Usuario dice: "${pregunta}"`;
-        const resGemini = await fetch(CONFIG.URL_GEMINI + CONFIG.MODELO_GEMINI + ':generateContent?key=' + CONFIG.GEMINI_API_KEY, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-        });
-        const dataGemini = await resGemini.json();
-        const respuestaIA = dataGemini.candidates[0].content.parts[0].text;
-        
-        voiceText.textContent = respuestaIA;
-        voiceText.textContent += " (Generando voz...)";
-        
-        // 2. Pedirle a ElevenLabs que hable
-        const resAudio = await fetch(`https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/elevenlabs-tts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({ text: respuestaIA, voice_id: "EXAVITQu4vr4xnSDxMaL" })
-        });
+   async function procesarPreguntaIA(pregunta) {
+  const voiceText = document.getElementById('voiceText');
+  voiceText.textContent = "Luci está pensando...";
+  
+  try {
+    // 1. Preguntar a Gemini
+    const prompt = `Eres Luci, asistente financiera de FINNEX. Responde en máximo 2 oraciones sin emojis. Usuario dice: "${pregunta}"`;
+    const resGemini = await fetch(CONFIG.URL_GEMINI + CONFIG.MODELO_GEMINI + ':generateContent?key=' + CONFIG.GEMINI_API_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    });
 
-        if (!resAudio.ok) {
-          const errorText = await resAudio.text();
-          throw new Error(errorText);
-        }
-
-        // 3. Reproducir el audio final
-        const audioBlob = await resAudio.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-
-      } catch (e) {
-        console.error(e);
-        voiceText.innerHTML = `<span style="color:red; font-size:13px;">Error: ${e.message}</span>`;
-      }
+    if (!resGemini.ok) {
+      const errText = await resGemini.text();
+      throw new Error(`Gemini HTTP ${resGemini.status}: ${errText}`);
     }
+
+    const dataGemini = await resGemini.json();
+    const respuestaIA = dataGemini.candidates[0].content.parts[0].text;
+    
+    voiceText.textContent = respuestaIA + " (Generando voz...)";
+    
+    // 2. Pedirle a ElevenLabs que hable (con diagnóstico completo)
+    const urlEleven = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/elevenlabs-tts`;
+    
+    const resAudio = await fetch(urlEleven, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ text: respuestaIA, voice_id: "EXAVITQu4vr4xnSDxMaL" })
+    });
+
+    // Si Supabase responde con un error HTTP, lo mostramos
+    if (!resAudio.ok) {
+      const errorBody = await resAudio.text();
+      throw new Error(`Supabase HTTP ${resAudio.status}: ${errorBody}`);
+    }
+
+    // 3. Reproducir el audio final
+    const audioBlob = await resAudio.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    audio.play();
+
+  } catch (e) {
+    console.error("ERROR DETALLADO:", e);
+    // Mostramos el error real en la pantalla para poder diagnosticar
+    voiceText.innerHTML = `<span style="color:red; font-size:12px; word-break:break-all;">Error: ${e.message}</span>`;
+  }
+}
   </script>
 </body>
 </html>
