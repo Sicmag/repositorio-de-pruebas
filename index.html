@@ -6,24 +6,42 @@
   <title>Prueba Asistente de Voz - FINNEX</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root { --wine: #6A0D2E; --wine-dark: #3E0721; --gold: #D4AF37; --bone: #F4F1EE; --white: #FFFFFF; --red: #EF4444; }
+    :root {
+      --wine: #6A0D2E;
+      --wine-dark: #3E0721;
+      --gold: #D4AF37;
+      --bone: #F4F1EE;
+      --white: #FFFFFF;
+      --red: #EF4444;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: var(--wine-dark); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    
+    /* Contenedor tipo Chat */
     .chat-window { width: 380px; height: 550px; background: var(--white); border-radius: 32px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    
     .chat-header { background: linear-gradient(135deg, var(--wine) 0%, var(--wine-dark) 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--gold); }
     .chat-header-name { font-size: 16px; font-weight: 800; }
     .chat-header-status { font-size: 12px; color: var(--gold); display: flex; align-items: center; gap: 4px; }
     .chat-header-status::before { content: ''; width: 8px; height: 8px; background: #10B981; border-radius: 50%; }
+
     .voice-assistant-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bone); padding: 24px; text-align: center; position: relative; overflow: hidden; }
+    
     .voice-robot-container { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
+    
+    /* Simulamos el robot con un emoji grande para esta prueba */
     .voice-robot { font-size: 100px; z-index: 2; transition: transform 0.3s ease; }
     .voice-robot.listening { animation: pulse-robot 1s infinite alternate; }
     @keyframes pulse-robot { from { transform: scale(1); } to { transform: scale(1.1); } }
+
     .voice-waves { position: absolute; inset: 0; border-radius: 50%; background: var(--wine); opacity: 0; z-index: 1; transition: opacity 0.3s; }
     .voice-waves.active { opacity: 0.15; animation: ripple 1.5s infinite ease-out; }
     @keyframes ripple { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
-    .voice-text { font-size: 15px; font-weight: 600; color: var(--wine); line-height: 1.5; max-width: 95%; min-height: 80px; z-index: 3; overflow-y: auto; }
-    .voice-controls { padding: 24px; background: var(--white); display: flex; justify-content: center; border-top: 1px solid #eee; }
+
+    .voice-text { font-size: 16px; font-weight: 700; color: var(--wine); line-height: 1.4; max-width: 90%; min-height: 60px; z-index: 3; }
+    
+    .voice-controls { padding: 32px; background: var(--white); display: flex; justify-content: center; border-top: 1px solid #eee; }
+    
     .mic-btn { width: 72px; height: 72px; border-radius: 50%; background: var(--wine); color: white; border: none; font-size: 32px; cursor: pointer; box-shadow: 0 10px 25px rgba(106, 13, 46, 0.3); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
     .mic-btn:hover { transform: scale(1.05); background: var(--wine-dark); }
     .mic-btn.listening { background: var(--red); animation: pulse-mic 1s infinite; }
@@ -35,8 +53,8 @@
   <div class="chat-window">
     <div class="chat-header">
       <div>
-        <div class="chat-header-name">Luci (IA Financiera)</div>
-        <div class="chat-header-status">Conectada</div>
+        <div class="chat-header-name">Luci (Prueba)</div>
+        <div class="chat-header-status">En línea</div>
       </div>
     </div>
     
@@ -45,68 +63,31 @@
         <div class="voice-robot" id="voiceRobot">🤖</div>
         <div class="voice-waves" id="voiceWaves"></div>
       </div>
-      <div class="voice-text" id="voiceText">Presiona el micrófono y pregúntame sobre finanzas, créditos o tu cuenta.</div>
+      <div class="voice-text" id="voiceText">Presiona el micrófono para hablarme</div>
     </div>
     
     <div class="voice-controls">
       <button class="mic-btn" id="micBtn" onclick="iniciarEscucha()">🎤</button>
     </div>
   </div>
-
-  <!-- Importamos tus configuraciones de FINNEX -->
   <script src="js/config.js"></script>
-
   <script>
     let recognition = null;
     let isListening = false;
-    let vocesDisponibles = [];
+    
+    // ⚠️ CAMBIA ESTO por el ID de 20 caracteres de tu proyecto
+    const SUPABASE_PROJECT_REF = "qoyfgxqsswlzpiriidwy"; 
 
-    // Cargar las voces del sistema
-    function cargarVoces() {
-      vocesDisponibles = window.speechSynthesis.getVoices();
-    }
-    window.speechSynthesis.onvoiceschanged = cargarVoces;
-    cargarVoces();
-
-    // 1. Función para hablar (Mejorada para buscar voces naturales)
-    function hablar(texto) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(texto);
-        utterance.lang = 'es-CO';
-        utterance.pitch = 1.0; 
-        utterance.rate = 1.0;
-        
-        // Buscar la mejor voz en español disponible
-        let mejorVoz = null;
-        // 1. Buscar voz de Google (suelen ser las más naturales en Chrome)
-        mejorVoz = vocesDisponibles.find(v => v.name.includes('Google') && v.lang.includes('es'));
-        // 2. Si no hay de Google, buscar cualquier voz en español
-        if (!mejorVoz) mejorVoz = vocesDisponibles.find(v => v.lang.includes('es'));
-        
-        if (mejorVoz) utterance.voice = mejorVoz;
-
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
-    // 2. Función para activar el micrófono
     function iniciarEscucha() {
-      if (isListening) { detenerEscucha(); return; }
-
+      if (isListening) return;
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) { alert("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge."); return; }
-
       recognition = new SpeechRecognition();
       recognition.lang = 'es-CO';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
 
       recognition.onstart = function() {
         isListening = true;
         document.getElementById('micBtn').classList.add('listening');
         document.getElementById('voiceRobot').classList.add('listening');
-        document.getElementById('voiceWaves').classList.add('active');
         document.getElementById('voiceText').textContent = "Te estoy escuchando...";
       };
 
@@ -114,18 +95,10 @@
         const textoUsuario = event.results[0][0].transcript;
         detenerEscucha();
         document.getElementById('voiceText').textContent = `Tú: "${textoUsuario}"`;
-        
-        // Enviar a Gemini
         procesarPreguntaIA(textoUsuario);
       };
 
-      recognition.onerror = function(event) {
-        detenerEscucha();
-        document.getElementById('voiceText').textContent = "No pude escucharte. Revisa el permiso del micrófono.";
-      };
-
       recognition.onend = function() { detenerEscucha(); };
-
       recognition.start();
     }
 
@@ -134,50 +107,50 @@
       if (recognition) recognition.stop();
       document.getElementById('micBtn').classList.remove('listening');
       document.getElementById('voiceRobot').classList.remove('listening');
-      document.getElementById('voiceWaves').classList.remove('active');
     }
 
-    // 3. Conexión REAL con Gemini
     async function procesarPreguntaIA(pregunta) {
       const voiceText = document.getElementById('voiceText');
       voiceText.textContent = "Luci está pensando...";
       
       try {
-        // Prompt diseñado para respuestas habladas y contexto financiero
-        const prompt = `Eres Luci, la asistente financiera por voz de FINNEX.
-El usuario te está hablando por micrófono. Responde de forma natural, cálida y directa.
-REGLAS ESTRICTAS:
-1. Máximo 3 oraciones (para que no sea un discurso largo).
-2. No uses emojis, asteriscos ni formato markdown.
-3. Tus respuestas deben ser fáciles de leer en voz alta.
-4. Eres experta en finanzas, créditos, CDT, cuentas de ahorro y el ecosistema FINNEX (NEXA, NEXO, NEXAR).
-5. Si te preguntan por el saldo, di: "Para ver tu saldo exacto, revisa tu dashboard, pero puedo ayudarte con cualquier duda sobre nuestros productos".
-
-Usuario dice: "${pregunta}"`;
-
-        const response = await fetch(CONFIG.URL_GEMINI + CONFIG.MODELO_GEMINI + ':generateContent?key=' + CONFIG.GEMINI_API_KEY, {
+        // 1. Preguntar a Gemini
+        const prompt = `Eres Luci, asistente financiera de FINNEX. Responde en máximo 2 oraciones sin emojis. Usuario dice: "${pregunta}"`;
+        const resGemini = await fetch(CONFIG.URL_GEMINI + CONFIG.MODELO_GEMINI + ':generateContent?key=' + CONFIG.GEMINI_API_KEY, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.5, maxOutputTokens: 150 }
-          }),
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        });
+        const dataGemini = await resGemini.json();
+        const respuestaIA = dataGemini.candidates[0].content.parts[0].text;
+        
+        voiceText.textContent = respuestaIA;
+        voiceText.textContent += " (Generando voz...)";
+        
+        // 2. Pedirle a ElevenLabs que hable
+        const resAudio = await fetch(`https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/elevenlabs-tts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({ text: respuestaIA, voice_id: "EXAVITQu4vr4xnSDxMaL" })
         });
 
-        const result = await response.json();
-        if (!result.candidates || !result.candidates[0]) throw new Error('Error IA');
+        if (!resAudio.ok) {
+          const errorText = await resAudio.text();
+          throw new Error(errorText);
+        }
 
-        const respuestaIA = result.candidates[0].content.parts[0].text;
-        
-        // Mostrar en pantalla y hablar
-        voiceText.textContent = respuestaIA;
-        hablar(respuestaIA);
-        
+        // 3. Reproducir el audio final
+        const audioBlob = await resAudio.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+
       } catch (e) {
         console.error(e);
-        const errorMsg = "Lo siento, tuve un problema de conexión con el servidor financiero. ¿Puedes repetirlo?";
-        voiceText.textContent = errorMsg;
-        hablar(errorMsg);
+        voiceText.innerHTML = `<span style="color:red; font-size:13px;">Error: ${e.message}</span>`;
       }
     }
   </script>
