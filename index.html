@@ -54,10 +54,12 @@
     </div>
   </div>
 
-  <!-- Configuración central (debe estar en la misma carpeta que este HTML) -->
   <script src="config.js"></script>
 
   <script>
+    // ⚠️ PON AQUÍ TU ID DE PROYECTO DE SUPABASE (20 caracteres)
+    const SUPABASE_PROJECT_REF = "qoyfgxqsswlzpiriidwy"; 
+
     let recognition = null;
     let isListening = false;
     let isBusy = false;
@@ -84,7 +86,6 @@
         return;
       }
 
-      // Si Luci está hablando, la callamos
       if (audioActual) { audioActual.pause(); audioActual = null; }
       window.speechSynthesis && window.speechSynthesis.cancel();
 
@@ -112,7 +113,7 @@
 
       recognition.onerror = (event) => {
         const msg = event.error === 'not-allowed'
-          ? "Permiso de micrófono denegado. Actívalo en el navegador (y abre la página con https o localhost)."
+          ? "Permiso de micrófono denegado. Actívalo en el navegador."
           : event.error === 'no-speech'
             ? "No te escuché. Intenta de nuevo."
             : "No pude escucharte. Revisa el micrófono.";
@@ -154,8 +155,8 @@
             { role: 'user', content: pregunta }
           ],
           temperature: 0.6,
-          max_completion_tokens: 600,   // gpt-oss razona primero; con pocos tokens puede devolver vacío
-          reasoning_effort: 'low'       // respuestas más rápidas para voz
+          max_completion_tokens: 600,
+          reasoning_effort: 'low'
         })
       });
 
@@ -171,7 +172,10 @@
 
     // ---------- ElevenLabs vía Supabase Edge Function ----------
     async function generarAudio(texto) {
-      const res = await fetch(`${CONFIG.SUPABASE_URL}/functions/v1/elevenlabs-tts`, {
+      // Usamos la URL construida con el PROJECT_REF
+      const urlFuncion = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/elevenlabs-tts`;
+
+      const res = await fetch(urlFuncion, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -225,7 +229,7 @@
       } catch (e) {
         console.error("ERROR VOZ:", e);
         $('voiceRobot').classList.remove('speaking');
-        // Mostramos la respuesta igual y usamos la voz del navegador
+        
         voiceText.innerHTML = `${respuestaIA}<br><span style="color:#b45309; font-size:11px; word-break:break-all;">(ElevenLabs falló: ${e.message})</span>`;
         hablarConNavegador(respuestaIA);
       } finally {
