@@ -2,198 +2,517 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luci - FINNEX</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luci AI | FINNEX</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+:root {
+    --navy: #102d46;
+    --navy-light: #19435b;
+    --teal: #13b99a;
+    --teal-light: #65e5ca;
+    --background: #f3f7fa;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--background);
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* FONDO */
+
+.background {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 42%, #e2f8f3 0%, transparent 35%),
+        linear-gradient(145deg, #f7fafc, #edf4f7);
+    z-index: -2;
+}
+
+.background::before,
+.background::after {
+    content: "";
+    position: absolute;
+    border: 1px solid rgba(19,185,154,.12);
+    border-radius: 50%;
+}
+
+.background::before {
+    width: 650px;
+    height: 650px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+}
+
+.background::after {
+    width: 850px;
+    height: 850px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+}
+
+/* CONTENEDOR */
+
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 25px;
+}
+
+/* MARCA */
+
+.brand {
+    position: absolute;
+    top: 32px;
+    left: 42px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    width: 43px;
+    height: 43px;
+    background: var(--navy);
+    color: var(--teal-light);
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    font-size: 19px;
+}
+
+.brand h2 {
+    color: var(--navy);
+    font-size: 19px;
+    letter-spacing: 1.5px;
+}
+
+.brand span {
+    display: block;
+    font-size: 9px;
+    color: #8295a3;
+    letter-spacing: 2px;
+    margin-top: 4px;
+}
+
+/* ROBOT */
+
+.robot-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: -15px;
+}
+
+.robot-glow {
+    width: 310px;
+    height: 310px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(19,185,154,.17), rgba(19,185,154,.02) 65%, transparent 70%);
+    display: grid;
+    place-items: center;
+    position: relative;
+}
+
+.robot-glow::before,
+.robot-glow::after {
+    content: "";
+    position: absolute;
+    border: 1px solid rgba(19,185,154,.19);
+    border-radius: 50%;
+    inset: 17px;
+    animation: rotate 18s linear infinite;
+}
+
+.robot-glow::after {
+    inset: 0;
+    border-style: dashed;
+    opacity: .5;
+    animation-direction: reverse;
+    animation-duration: 35s;
+}
+
+.robot {
+    width: 190px;
+    height: 190px;
+    border-radius: 55px;
+    background: linear-gradient(145deg, #183e58, #102b43);
+    box-shadow:
+        0 25px 55px rgba(16,45,70,.22),
+        inset 0 2px 5px rgba(255,255,255,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    animation: float 4s ease-in-out infinite;
+}
+
+.robot-face {
+    width: 137px;
+    height: 105px;
+    border-radius: 35px;
+    background: linear-gradient(145deg, #e9fffb, #b9f3e8);
+    box-shadow: inset 0 4px 12px rgba(255,255,255,.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    position: relative;
+}
+
+.robot-face::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    width: 5px;
+    height: 18px;
+    border-radius: 5px;
+    background: var(--teal);
+}
+
+.robot-eye {
+    width: 13px;
+    height: 21px;
+    border-radius: 10px;
+    background: #087f7b;
+    box-shadow: 0 0 13px rgba(19,185,154,.7);
+    animation: blink 5s infinite;
+}
+
+.robot-mouth {
+    position: absolute;
+    bottom: 22px;
+    width: 23px;
+    height: 7px;
+    border-radius: 0 0 15px 15px;
+    border-bottom: 3px solid #087f7b;
+}
+
+.robot-ear {
+    position: absolute;
+    width: 15px;
+    height: 42px;
+    border-radius: 8px;
+    background: var(--teal);
+    top: 74px;
+}
+
+.robot-ear.left {
+    left: -9px;
+}
+
+.robot-ear.right {
+    right: -9px;
+}
+
+.robot-light {
+    position: absolute;
+    top: 19px;
+    right: 22px;
+    width: 9px;
+    height: 9px;
+    background: #51eac2;
+    border-radius: 50%;
+    box-shadow: 0 0 15px #51eac2;
+}
+
+/* IDENTIDAD LUCI */
+
+.identity {
+    text-align: center;
+    margin-top: 17px;
+}
+
+.identity h1 {
+    font-size: 37px;
+    color: var(--navy);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+}
+
+.identity p {
+    color: #8295a3;
+    font-size: 12px;
+    margin-top: 8px;
+    letter-spacing: 1px;
+}
+
+/* ESTADO */
+
+.status {
+    margin-top: 35px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #708795;
+    font-size: 12px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--teal);
+    box-shadow: 0 0 10px rgba(19,185,154,.5);
+}
+
+/* MICROFONO */
+
+.microphone-container {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.microphone {
+    width: 76px;
+    height: 76px;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #16c5a2, #079b84);
+    color: white;
+    font-size: 25px;
+    cursor: pointer;
+    box-shadow:
+        0 10px 25px rgba(19,185,154,.3),
+        inset 0 2px 4px rgba(255,255,255,.3);
+    transition: .25s;
+    position: relative;
+}
+
+.microphone:hover {
+    transform: scale(1.07);
+    box-shadow: 0 13px 35px rgba(19,185,154,.4);
+}
+
+.microphone.listening {
+    animation: pulse 1.5s infinite;
+    background: linear-gradient(145deg, #102d46, #1c526a);
+}
+
+.microphone-label {
+    color: #718795;
+    font-size: 11px;
+    letter-spacing: .5px;
+}
+
+/* PIE */
+
+.footer {
+    position: absolute;
+    bottom: 25px;
+    color: #a0adb7;
+    font-size: 10px;
+    letter-spacing: .5px;
+}
+
+.footer span {
+    color: #16a88f;
+    font-weight: 700;
+}
+
+/* ANIMACIONES */
+
+@keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(19,185,154,.4); }
+    70% { box-shadow: 0 0 0 22px rgba(19,185,154,0); }
+    100% { box-shadow: 0 0 0 0 rgba(19,185,154,0); }
+}
+
+@keyframes rotate {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+    0%, 45%, 49%, 100% { transform: scaleY(1); }
+    47% { transform: scaleY(.1); }
+}
+
+/* MOVIL */
+
+@media(max-width:600px) {
+    .brand {
+        top: 22px;
+        left: 20px;
+    }
+
+    .robot-glow {
+        width: 270px;
+        height: 270px;
+    }
+
+    .robot {
+        width: 165px;
+        height: 165px;
+        border-radius: 48px;
+    }
+
+    .robot-face {
+        width: 120px;
+        height: 90px;
+    }
+
+    .robot-ear {
+        top: 63px;
+    }
+
+    .identity h1 {
+        font-size: 32px;
+    }
+}
+</style>
 </head>
+
 <body>
 
-    <main>
-        <button id="voiceButton" type="button">
-            Iniciar conversación
-        </button>
+<div class="background"></div>
 
-        <p id="status">Luci está esperando.</p>
-    </main>
+<main class="app">
 
-    <script>
-        const voiceButton = document.getElementById("voiceButton");
-        const statusText = document.getElementById("status");
+    <header class="brand">
+        <div class="brand-icon">
+            <i class="fa-solid fa-building-columns"></i>
+        </div>
 
-        let socket = null;
-        let microphone = null;
-        let recorder = null;
-        let active = false;
-        let currentAudio = null;
+        <div>
+            <h2>FINNEX</h2>
+            <span>BANKING ECOSYSTEM</span>
+        </div>
+    </header>
 
-        function setStatus(message) {
-            statusText.textContent = message;
-        }
+    <section class="robot-area">
 
-        async function startConversation() {
-            try {
-                setStatus("Solicitando acceso al micrófono...");
+        <div class="robot-glow">
 
-                microphone = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true
-                    }
-                });
+            <div class="robot">
 
-                const protocol =
-                    window.location.protocol === "https:" ? "wss:" : "ws:";
+                <div class="robot-light"></div>
 
-                socket = new WebSocket(
-                    `${protocol}//${window.location.host}/ws/luci`
-                );
+                <div class="robot-ear left"></div>
+                <div class="robot-ear right"></div>
 
-                socket.binaryType = "arraybuffer";
+                <div class="robot-face">
+                    <div class="robot-eye"></div>
+                    <div class="robot-eye"></div>
+                    <div class="robot-mouth"></div>
+                </div>
 
-                socket.onopen = () => {
-                    active = true;
+            </div>
 
-                    voiceButton.textContent = "Finalizar conversación";
-                    setStatus("Luci está escuchando.");
+        </div>
 
-                    socket.send(JSON.stringify({
-                        type: "start",
-                        language: "es-CO",
-                        assistant: "luci",
-                        bank: "FINNEX"
-                    }));
+        <div class="identity">
+            <h1>Luci</h1>
+            <p>INTELIGENCIA ARTIFICIAL FINNEX</p>
+        </div>
 
-                    recorder = new MediaRecorder(microphone, {
-                        mimeType: "audio/webm;codecs=opus"
-                    });
+        <div class="status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Estoy aquí para escucharte</span>
+        </div>
 
-                    recorder.ondataavailable = async (event) => {
-                        if (
-                            event.data.size > 0 &&
-                            socket &&
-                            socket.readyState === WebSocket.OPEN
-                        ) {
-                            const audioData = await event.data.arrayBuffer();
-                            socket.send(audioData);
-                        }
-                    };
+        <div class="microphone-container">
 
-                    // Envío continuo de audio al backend.
-                    recorder.start(250);
-                };
+            <button class="microphone" id="micButton" aria-label="Iniciar conversación">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
 
-                socket.onmessage = async (event) => {
-                    if (typeof event.data !== "string") return;
+            <span class="microphone-label" id="micLabel">
+                Toca para hablar con Luci
+            </span>
 
-                    const message = JSON.parse(event.data);
+        </div>
 
-                    if (message.type === "status") {
-                        setStatus(message.message);
-                    }
+    </section>
 
-                    if (message.type === "audio") {
-                        playAudio(message.data, message.mime_type);
-                    }
+    <footer class="footer">
+        <span>FINNEX</span> · Tu banco, tu inteligencia
+    </footer>
 
-                    if (message.type === "interrupt") {
-                        stopAudio();
-                    }
-                };
+</main>
 
-                socket.onerror = () => {
-                    setStatus("No se pudo conectar con Luci.");
-                };
+<script>
+const micButton = document.getElementById("micButton");
+const statusText = document.getElementById("statusText");
+const micLabel = document.getElementById("micLabel");
 
-                socket.onclose = () => {
-                    if (active) {
-                        stopConversation();
-                        setStatus("Conexión finalizada.");
-                    }
-                };
+let microphone = null;
+let listening = false;
 
-            } catch (error) {
-                console.error(error);
-                setStatus("No fue posible acceder al micrófono.");
-                stopConversation();
-            }
-        }
-
-        function playAudio(base64Audio, mimeType = "audio/mpeg") {
-            stopAudio();
-
-            const binary = atob(base64Audio);
-            const bytes = new Uint8Array(binary.length);
-
-            for (let i = 0; i < binary.length; i++) {
-                bytes[i] = binary.charCodeAt(i);
-            }
-
-            const audioBlob = new Blob([bytes], {
-                type: mimeType
-            });
-
-            const audioURL = URL.createObjectURL(audioBlob);
-
-            currentAudio = new Audio(audioURL);
-
-            currentAudio.onended = () => {
-                URL.revokeObjectURL(audioURL);
-                currentAudio = null;
-            };
-
-            currentAudio.play().catch(error => {
-                console.error("Error reproduciendo audio:", error);
-            });
-        }
-
-        function stopAudio() {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-                currentAudio = null;
-            }
-        }
-
-        function stopConversation() {
-            active = false;
-
-            stopAudio();
-
-            if (recorder && recorder.state !== "inactive") {
-                recorder.stop();
-            }
-
-            if (microphone) {
-                microphone.getTracks().forEach(track => track.stop());
-                microphone = null;
-            }
-
-            if (socket) {
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({
-                        type: "stop"
-                    }));
-                    socket.close();
-                }
-
-                socket = null;
-            }
-
-            recorder = null;
-            voiceButton.textContent = "Iniciar conversación";
-        }
-
-        voiceButton.addEventListener("click", () => {
-            if (active) {
-                stopConversation();
-                setStatus("Conversación finalizada.");
-            } else {
-                startConversation();
+async function startListening() {
+    try {
+        microphone = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
             }
         });
 
-    </script>
+        listening = true;
+
+        micButton.classList.add("listening");
+        micButton.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+
+        statusText.textContent = "Luci está escuchando...";
+        micLabel.textContent = "Toca para finalizar";
+
+    } catch (error) {
+        statusText.textContent = "No se pudo acceder al micrófono";
+        micLabel.textContent = "Verifica los permisos del navegador";
+    }
+}
+
+function stopListening() {
+    if (microphone) {
+        microphone.getTracks().forEach(track => track.stop());
+        microphone = null;
+    }
+
+    listening = false;
+
+    micButton.classList.remove("listening");
+    micButton.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+
+    statusText.textContent = "Estoy aquí para escucharte";
+    micLabel.textContent = "Toca para hablar con Luci";
+}
+
+micButton.addEventListener("click", () => {
+    if (listening) {
+        stopListening();
+    } else {
+        startListening();
+    }
+});
+</script>
 
 </body>
 </html>
