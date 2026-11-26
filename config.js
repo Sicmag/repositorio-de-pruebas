@@ -16,7 +16,7 @@ const CONFIG = Object.freeze({
     MODELO_GROQ: "openai/gpt-oss-120b",
 
     // ============ ELEVENLABS ============
-    ELEVENLABS_API_KEY: "sk_04a01e41e55743d3888862bfe66e43e86dc09f61c838f7e6",
+    ELEVENLABS_API_KEY: "sk_78da1fb7bc247f4509c4405b5f2c7c0b83ca1e517ffb96cd",
     ELEVENLABS_URL: "https://api.elevenlabs.io/v1/text-to-speech/",
     ELEVENLABS_VOICE_ID: "EXAVITQu4vr4xnSDxMaL",
     ELEVENLABS_MODEL: "eleven_multilingual_v2",
