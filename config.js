@@ -10,6 +10,7 @@ const CONFIG = {
     GROQ_API_KEY: "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",
     URL_GROQ: "https://api.groq.com/openai/v1/chat/completions",
     MODELO_GROQ: "openai/gpt-oss-120b", // <--- Modelo actualizado
+  ELEVENLABS_API_KEY: "sk_e5c05b8ebb08e23c26ca51f9e5566ffafbbe3361c364f997",
 
     // ============ ASISTENTE ============
     ASISTENTE_NOMBRE: "Luci",
