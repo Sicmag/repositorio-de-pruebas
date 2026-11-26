@@ -12,6 +12,12 @@ const CONFIG = {
     MODELO_GROQ: "openai/gpt-oss-120b", // <--- Modelo actualizado
   ELEVENLABS_API_KEY: "sk_e5c05b8ebb08e23c26ca51f9e5566ffafbbe3361c364f997",
 
+      // ============ ELEVENLABS (voz de Luci) ============
+  // Voz predefinida (Sarah): funciona con el plan gratuito.
+  // La voz de la librería "ZqvIIuD5aI9JFejebHiH" requiere un plan de pago.
+  ELEVENLABS_VOICE_ID: "EXAVITQu4vr4xnSDxMaL",
+  ELEVENLABS_MODEL: "eleven_multilingual_v2",
+
     // ============ ASISTENTE ============
     ASISTENTE_NOMBRE: "Luci",
     ASISTENTE_ROL: "Asistente virtual de FinNex",
